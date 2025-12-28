@@ -1,17 +1,71 @@
 import React, { useState, useEffect } from 'react';
 import { ShoppingCart, Search, User, LogOut, Trash2, Plus, Minus } from 'lucide-react';
 
+// --- IMPORT HÌNH ẢNH TỪ THƯ MỤC LOCAL ---
+// Đảm bảo bạn đã lưu ảnh vào thư mục: fan-shop/src/imgs/
+import imgQuat1 from './imgs/quat1.jpg'; // Hình người đàn ông với quạt xanh ngọc
+import imgQuat2 from './imgs/quat2.jpg'; // Hình chú chó nằm ngủ
+import imgQuat3 from './imgs/quat3.jpg'; // Hình chú chó nhỏ và quạt bạc
+import imgQuat4 from './imgs/quat4.jpg'; // Hình người đàn ông đeo kính bị gió thổi mạnh
+import imgQuat5 from './imgs/quat5.jpg'; // Hình người đàn ông nằm với dây ruy băng
+import imgQuat6 from './imgs/quat6.jpg'; // Hình cô gái tận hưởng gió
+
 // Mock Backend Service (Giả lập API)
 const mockBackend = {
   users: JSON.parse(localStorage.getItem('users') || '[]'),
+  
+  // Đã cập nhật danh sách sản phẩm với ảnh mới
   products: [
-    { id: 1, name: 'Quạt Trần KDK K15Z', price: 1200000, brand: 'KDK', image: 'https://images.unsplash.com/photo-1632225896174-4ac5c5c6d36b?w=300', description: 'Quạt trần cao cấp, tiết kiệm điện' },
-    { id: 2, name: 'Quạt Đứng Panasonic F-409', price: 850000, brand: 'Panasonic', image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=300', description: 'Quạt đứng 5 cánh, điều khiển từ xa' },
-    { id: 3, name: 'Quạt Hộp Senko B113', price: 450000, brand: 'Senko', image: 'https://images.unsplash.com/photo-1626806787461-102c1bfaaea1?w=300', description: 'Quạt hộp công nghiệp, gió mạnh' },
-    { id: 4, name: 'Quạt Điều Hòa Sunhouse SHD7730', price: 2500000, brand: 'Sunhouse', image: 'https://images.unsplash.com/photo-1597452485669-2c7bb5fef90d?w=300', description: 'Quạt điều hòa, làm mát hiệu quả' },
-    { id: 5, name: 'Quạt Bàn Toshiba F-LSA10', price: 350000, brand: 'Toshiba', image: 'https://images.unsplash.com/photo-1583523032343-bacc5b6f1f5f?w=300', description: 'Quạt bàn mini, tiện lợi' },
-    { id: 6, name: 'Quạt Treo Tường Mitsubishi CY-10WH', price: 680000, brand: 'Mitsubishi', image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=300', description: 'Quạt treo tường, điều chỉnh linh hoạt' }
+    { 
+      id: 1, 
+      name: 'Quạt Trần KDK K15Z', 
+      price: 1200000, 
+      brand: 'KDK', 
+      image: imgQuat2, // Ảnh chú chó ngủ ngon (tượng trưng cho êm ái)
+      description: 'Quạt trần cao cấp, tiết kiệm điện, vận hành êm ái.' 
+    },
+    { 
+      id: 2, 
+      name: 'Quạt Đứng Panasonic F-409', 
+      price: 850000, 
+      brand: 'Panasonic', 
+      image: imgQuat4, // Ảnh gió thổi mạnh (đặc trưng quạt đứng công suất lớn)
+      description: 'Quạt đứng 5 cánh, gió cực mạnh, điều khiển từ xa.' 
+    },
+    { 
+      id: 3, 
+      name: 'Quạt Hộp Senko B113', 
+      price: 450000, 
+      brand: 'Senko', 
+      image: imgQuat3, // Ảnh quạt để bàn màu bạc (khớp với hình dáng quạt hộp/bàn)
+      description: 'Quạt hộp nhỏ gọn, an toàn cho trẻ em.' 
+    },
+    { 
+      id: 4, 
+      name: 'Quạt Điều Hòa Sunhouse SHD7730', 
+      price: 2500000, 
+      brand: 'Sunhouse', 
+      image: imgQuat6, // Ảnh cô gái tận hưởng (tượng trưng cho mát lạnh như điều hòa)
+      description: 'Quạt điều hòa, làm mát hiệu quả bằng hơi nước.' 
+    },
+    { 
+      id: 5, 
+      name: 'Quạt Bàn Toshiba F-LSA10', 
+      price: 350000, 
+      brand: 'Toshiba', 
+      image: imgQuat1, // Ảnh khớp hoàn toàn (người đàn ông ôm quạt bàn màu xanh)
+      description: 'Quạt bàn mini, màu sắc trang nhã, tiện lợi.' 
+    },
+    { 
+      id: 6, 
+      name: 'Quạt Treo Tường Mitsubishi CY-10WH', 
+      price: 680000, 
+      brand: 'Mitsubishi', 
+      image: imgQuat5, // Ảnh minh họa luồng gió rộng
+      description: 'Quạt treo tường, góc quay rộng, điều chỉnh linh hoạt.' 
+    }
   ],
+  
   carts: JSON.parse(localStorage.getItem('carts') || '{}'),
   
   saveUsers() {
@@ -24,32 +78,24 @@ const mockBackend = {
   
   // Validate password (8-16 ký tự)
   validatePassword(password) {
-    // Kiểm tra độ dài
     if (password.length < 8 || password.length > 16) {
       return { valid: false, message: 'Mật khẩu phải từ 8 đến 16 ký tự!' };
     }
-    
-    // Kiểm tra có chữ hoa
     if (!/[A-Z]/.test(password)) {
       return { valid: false, message: 'Mật khẩu phải có ít nhất 1 chữ IN HOA!' };
     }
-    
-    // Kiểm tra có chữ thường
     if (!/[a-z]/.test(password)) {
       return { valid: false, message: 'Mật khẩu phải có ít nhất 1 chữ thường!' };
     }
-    
-    // Kiểm tra có ký tự đặc biệt
     if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
       return { valid: false, message: 'Mật khẩu phải có ít nhất 1 ký tự đặc biệt (!@#$%^&*...)!' };
     }
-    
     return { valid: true };
   },
   
-  // Mã hóa mật khẩu đơn giản (trong thực tế dùng bcrypt)
+  // Mã hóa mật khẩu đơn giản
   hashPassword(password) {
-    return btoa(password + 'salt123'); // Base64 encode
+    return btoa(password + 'salt123'); 
   },
   
   verifyPassword(password, hash) {
@@ -97,7 +143,7 @@ const mockBackend = {
     return { 
       success: true, 
       user: { id: user.id, username: user.username, email: user.email },
-      token: btoa(`${user.id}:${Date.now()}`) // Mock JWT
+      token: btoa(`${user.id}:${Date.now()}`) 
     };
   },
   
@@ -181,34 +227,19 @@ function App() {
     }
   }, [currentUser]);
 
-  // Validate password frontend (8-16 ký tự, có chữ hoa, chữ thường, ký tự đặc biệt)
+  // Validate password frontend
   const validatePassword = (password) => {
     if (password.length < 8) return 'Mật khẩu phải có ít nhất 8 ký tự!';
     if (password.length > 16) return 'Mật khẩu không được quá 16 ký tự!';
-    
-    // Kiểm tra có chữ hoa
-    if (!/[A-Z]/.test(password)) {
-      return 'Mật khẩu phải có ít nhất 1 chữ IN HOA!';
-    }
-    
-    // Kiểm tra có chữ thường
-    if (!/[a-z]/.test(password)) {
-      return 'Mật khẩu phải có ít nhất 1 chữ thường!';
-    }
-    
-    // Kiểm tra có ký tự đặc biệt
-    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
-      return 'Mật khẩu phải có ít nhất 1 ký tự đặc biệt (!@#$%^&*...)!';
-    }
-    
+    if (!/[A-Z]/.test(password)) return 'Mật khẩu phải có ít nhất 1 chữ IN HOA!';
+    if (!/[a-z]/.test(password)) return 'Mật khẩu phải có ít nhất 1 chữ thường!';
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) return 'Mật khẩu phải có ít nhất 1 ký tự đặc biệt (!@#$%^&*...)!';
     return '';
   };
 
   // Handle auth
   const handleAuth = () => {
     setAuthError('');
-
-    // Validate password
     const pwdError = validatePassword(authForm.password);
     if (pwdError) {
       setAuthError(pwdError);
@@ -473,30 +504,34 @@ function App() {
             {/* Products Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {products.map(product => (
-                <div key={product.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition">
-                  <img
-                    src={product.image}
-                    alt={product.name}
-                    className="w-full h-48 object-cover"
-                  />
-                  <div className="p-4">
+                <div key={product.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition flex flex-col h-full">
+                  <div className="h-48 overflow-hidden bg-gray-100 flex items-center justify-center">
+                    <img
+                      src={product.image}
+                      alt={product.name}
+                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                    />
+                  </div>
+                  <div className="p-4 flex flex-col flex-grow">
                     <h3 className="font-bold text-lg mb-2 text-gray-800">{product.name}</h3>
-                    <p className="text-gray-600 text-sm mb-2">{product.description}</p>
-                    <div className="flex items-center justify-between mb-4">
-                      <span className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded">
-                        {product.brand}
-                      </span>
-                      <span className="text-lg font-bold text-blue-600">
-                        {product.price.toLocaleString('vi-VN')}đ
-                      </span>
+                    <p className="text-gray-600 text-sm mb-4 flex-grow">{product.description}</p>
+                    <div className="mt-auto">
+                        <div className="flex items-center justify-between mb-4">
+                        <span className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded">
+                            {product.brand}
+                        </span>
+                        <span className="text-lg font-bold text-blue-600">
+                            {product.price.toLocaleString('vi-VN')}đ
+                        </span>
+                        </div>
+                        <button
+                        onClick={() => handleAddToCart(product.id)}
+                        className="w-full bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition flex items-center justify-center gap-2"
+                        >
+                        <ShoppingCart size={18} />
+                        Thêm vào giỏ
+                        </button>
                     </div>
-                    <button
-                      onClick={() => handleAddToCart(product.id)}
-                      className="w-full bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition flex items-center justify-center gap-2"
-                    >
-                      <ShoppingCart size={18} />
-                      Thêm vào giỏ
-                    </button>
                   </div>
                 </div>
               ))}
