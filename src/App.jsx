@@ -92,6 +92,11 @@ const mockBackend = {
       return { valid: false, message: 'Mật khẩu phải có ít nhất 1 chữ thường!' };
     }
     
+    // Kiểm tra có số
+    if (!/[0-9]/.test(password)) {
+      return { valid: false, message: 'Mật khẩu phải có ít nhất 1 chữ số!' };
+    }
+    
     // Kiểm tra có ký tự đặc biệt
     if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
       return { valid: false, message: 'Mật khẩu phải có ít nhất 1 ký tự đặc biệt (!@#$%^&*...)!' };
