@@ -24,7 +24,27 @@ const mockBackend = {
   
   // Validate password (8-16 ký tự)
   validatePassword(password) {
-    return password.length >= 8 && password.length <= 16;
+    // Kiểm tra độ dài
+    if (password.length < 8 || password.length > 16) {
+      return { valid: false, message: 'Mật khẩu phải từ 8 đến 16 ký tự!' };
+    }
+    
+    // Kiểm tra có chữ hoa
+    if (!/[A-Z]/.test(password)) {
+      return { valid: false, message: 'Mật khẩu phải có ít nhất 1 chữ IN HOA!' };
+    }
+    
+    // Kiểm tra có chữ thường
+    if (!/[a-z]/.test(password)) {
+      return { valid: false, message: 'Mật khẩu phải có ít nhất 1 chữ thường!' };
+    }
+    
+    // Kiểm tra có ký tự đặc biệt
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+      return { valid: false, message: 'Mật khẩu phải có ít nhất 1 ký tự đặc biệt (!@#$%^&*...)!' };
+    }
+    
+    return { valid: true };
   },
   
   // Mã hóa mật khẩu đơn giản (trong thực tế dùng bcrypt)
@@ -38,8 +58,9 @@ const mockBackend = {
   
   // API Methods
   register(username, email, password) {
-    if (!this.validatePassword(password)) {
-      return { success: false, message: 'Mật khẩu phải từ 8 đến 16 ký tự!' };
+    const validation = this.validatePassword(password);
+    if (!validation.valid) {
+      return { success: false, message: validation.message };
     }
     
     if (this.users.find(u => u.email === email)) {
@@ -160,10 +181,26 @@ function App() {
     }
   }, [currentUser]);
 
-  // Validate password frontend
+  // Validate password frontend (8-16 ký tự, có chữ hoa, chữ thường, ký tự đặc biệt)
   const validatePassword = (password) => {
     if (password.length < 8) return 'Mật khẩu phải có ít nhất 8 ký tự!';
     if (password.length > 16) return 'Mật khẩu không được quá 16 ký tự!';
+    
+    // Kiểm tra có chữ hoa
+    if (!/[A-Z]/.test(password)) {
+      return 'Mật khẩu phải có ít nhất 1 chữ IN HOA!';
+    }
+    
+    // Kiểm tra có chữ thường
+    if (!/[a-z]/.test(password)) {
+      return 'Mật khẩu phải có ít nhất 1 chữ thường!';
+    }
+    
+    // Kiểm tra có ký tự đặc biệt
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+      return 'Mật khẩu phải có ít nhất 1 ký tự đặc biệt (!@#$%^&*...)!';
+    }
+    
     return '';
   };
 
@@ -329,7 +366,7 @@ function App() {
               
               <div>
                 <label className="block text-sm font-medium mb-1 text-gray-700">
-                  Mật khẩu (8-16 ký tự)
+                  Mật khẩu (8-16 ký tự, phải có chữ HOA, thường, ký tự đặc biệt)
                 </label>
                 <input
                   type="password"
@@ -337,12 +374,23 @@ function App() {
                   value={authForm.password}
                   onChange={(e) => setAuthForm({...authForm, password: e.target.value})}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white text-gray-900"
-                  placeholder="Nhập mật khẩu (8-16 ký tự)"
+                  placeholder="Nhập mật khẩu (VD: Pass@123)"
                 />
                 {authForm.password && (
-                  <p className={`text-xs mt-1 ${authForm.password.length >= 8 && authForm.password.length <= 16 ? 'text-green-600' : 'text-red-600'}`}>
-                    {authForm.password.length}/16 ký tự
-                  </p>
+                  <div className="mt-2 space-y-1">
+                    <p className={`text-xs ${authForm.password.length >= 8 && authForm.password.length <= 16 ? 'text-green-600' : 'text-red-600'}`}>
+                      ✓ Độ dài: {authForm.password.length}/16 ký tự
+                    </p>
+                    <p className={`text-xs ${/[A-Z]/.test(authForm.password) ? 'text-green-600' : 'text-red-600'}`}>
+                      {/[A-Z]/.test(authForm.password) ? '✓' : '✗'} Có chữ IN HOA
+                    </p>
+                    <p className={`text-xs ${/[a-z]/.test(authForm.password) ? 'text-green-600' : 'text-red-600'}`}>
+                      {/[a-z]/.test(authForm.password) ? '✓' : '✗'} Có chữ thường
+                    </p>
+                    <p className={`text-xs ${/[!@#$%^&*(),.?":{}|<>]/.test(authForm.password) ? 'text-green-600' : 'text-red-600'}`}>
+                      {/[!@#$%^&*(),.?":{}|<>]/.test(authForm.password) ? '✓' : '✗'} Có ký tự đặc biệt (!@#$%...)
+                    </p>
+                  </div>
                 )}
               </div>
               
