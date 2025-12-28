@@ -14,7 +14,7 @@ import imgQuat6 from './imgs/quat6.jpg'; // Hình cô gái tận hưởng gió
 const mockBackend = {
   users: JSON.parse(localStorage.getItem('users') || '[]'),
   
-  // Đã cập nhật danh sách sản phẩm với ảnh mới
+  // Đã cập nhật danh sách sản phẩm với ảnh local
   products: [
     { 
       id: 1, 
@@ -65,7 +65,6 @@ const mockBackend = {
       description: 'Quạt treo tường, góc quay rộng, điều chỉnh linh hoạt.' 
     }
   ],
-  
   carts: JSON.parse(localStorage.getItem('carts') || '{}'),
   
   saveUsers() {
@@ -78,24 +77,32 @@ const mockBackend = {
   
   // Validate password (8-16 ký tự)
   validatePassword(password) {
+    // Kiểm tra độ dài
     if (password.length < 8 || password.length > 16) {
       return { valid: false, message: 'Mật khẩu phải từ 8 đến 16 ký tự!' };
     }
+    
+    // Kiểm tra có chữ hoa
     if (!/[A-Z]/.test(password)) {
       return { valid: false, message: 'Mật khẩu phải có ít nhất 1 chữ IN HOA!' };
     }
+    
+    // Kiểm tra có chữ thường
     if (!/[a-z]/.test(password)) {
       return { valid: false, message: 'Mật khẩu phải có ít nhất 1 chữ thường!' };
     }
+    
+    // Kiểm tra có ký tự đặc biệt
     if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
       return { valid: false, message: 'Mật khẩu phải có ít nhất 1 ký tự đặc biệt (!@#$%^&*...)!' };
     }
+    
     return { valid: true };
   },
   
-  // Mã hóa mật khẩu đơn giản
+  // Mã hóa mật khẩu đơn giản (trong thực tế dùng bcrypt)
   hashPassword(password) {
-    return btoa(password + 'salt123'); 
+    return btoa(password + 'salt123'); // Base64 encode
   },
   
   verifyPassword(password, hash) {
@@ -143,7 +150,7 @@ const mockBackend = {
     return { 
       success: true, 
       user: { id: user.id, username: user.username, email: user.email },
-      token: btoa(`${user.id}:${Date.now()}`) 
+      token: btoa(`${user.id}:${Date.now()}`) // Mock JWT
     };
   },
   
@@ -206,6 +213,8 @@ function App() {
   const [authMode, setAuthMode] = useState('login');
   const [authForm, setAuthForm] = useState({ username: '', email: '', password: '' });
   const [authError, setAuthError] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
 
   // Load user from session
   useEffect(() => {
@@ -227,19 +236,94 @@ function App() {
     }
   }, [currentUser]);
 
-  // Validate password frontend
+  // Validate email format
+  const validateEmailFormat = (email) => {
+    // Regex kiểm tra format email chuẩn
+    const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    return emailRegex.test(email);
+  };
+
+  // Kiểm tra email có tồn tại thật không (dùng API)
+  const checkEmailExists = async (email) => {
+    try {
+      // Giả lập API call - trong thực tế gọi đến service kiểm tra email
+      // VD: https://emailvalidation.abstractapi.com/v1/
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          // Mock: chấp nhận email có domain phổ biến
+          const validDomains = ['gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com'];
+          const domain = email.split('@')[1];
+          resolve(validDomains.includes(domain));
+        }, 500);
+      });
+    } catch (error) {
+      return true; // Nếu API lỗi, cho phép đăng ký
+    }
+  };
+
+  // Validate email với debounce
+  const validateEmail = async (email) => {
+    setEmailError('');
+    
+    if (!email) {
+      setEmailError('Email không được để trống!');
+      return false;
+    }
+    
+    // Kiểm tra format
+    if (!validateEmailFormat(email)) {
+      setEmailError('Email không đúng định dạng! (VD: example@gmail.com)');
+      return false;
+    }
+    
+    // Kiểm tra domain có tồn tại
+    setIsCheckingEmail(true);
+    const exists = await checkEmailExists(email);
+    setIsCheckingEmail(false);
+    
+    if (!exists) {
+      setEmailError('Email này có thể không tồn tại! Vui lòng kiểm tra lại.');
+      return false;
+    }
+    
+    return true;
+  };
+
+  // Validate password frontend (8-16 ký tự, có chữ hoa, chữ thường, ký tự đặc biệt)
   const validatePassword = (password) => {
     if (password.length < 8) return 'Mật khẩu phải có ít nhất 8 ký tự!';
     if (password.length > 16) return 'Mật khẩu không được quá 16 ký tự!';
-    if (!/[A-Z]/.test(password)) return 'Mật khẩu phải có ít nhất 1 chữ IN HOA!';
-    if (!/[a-z]/.test(password)) return 'Mật khẩu phải có ít nhất 1 chữ thường!';
-    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) return 'Mật khẩu phải có ít nhất 1 ký tự đặc biệt (!@#$%^&*...)!';
+    
+    // Kiểm tra có chữ hoa
+    if (!/[A-Z]/.test(password)) {
+      return 'Mật khẩu phải có ít nhất 1 chữ IN HOA!';
+    }
+    
+    // Kiểm tra có chữ thường
+    if (!/[a-z]/.test(password)) {
+      return 'Mật khẩu phải có ít nhất 1 chữ thường!';
+    }
+    
+    // Kiểm tra có ký tự đặc biệt
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+      return 'Mật khẩu phải có ít nhất 1 ký tự đặc biệt (!@#$%^&*...)!';
+    }
+    
     return '';
   };
 
   // Handle auth
-  const handleAuth = () => {
+  const handleAuth = async () => {
     setAuthError('');
+    setEmailError('');
+
+    // Validate email
+    const emailValid = await validateEmail(authForm.email);
+    if (!emailValid) {
+      return;
+    }
+
+    // Validate password
     const pwdError = validatePassword(authForm.password);
     if (pwdError) {
       setAuthError(pwdError);
@@ -389,10 +473,31 @@ function App() {
                   type="email"
                   required
                   value={authForm.email}
-                  onChange={(e) => setAuthForm({...authForm, email: e.target.value})}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white text-gray-900"
-                  placeholder="Nhập email"
+                  onChange={(e) => {
+                    setAuthForm({...authForm, email: e.target.value});
+                    setEmailError('');
+                  }}
+                  onBlur={() => validateEmail(authForm.email)}
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white text-gray-900 ${
+                    emailError ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="example@gmail.com"
                 />
+                {isCheckingEmail && (
+                  <p className="text-xs mt-1 text-blue-600">
+                    ⏳ Đang kiểm tra email...
+                  </p>
+                )}
+                {emailError && !isCheckingEmail && (
+                  <p className="text-xs mt-1 text-red-600">
+                    ⚠️ {emailError}
+                  </p>
+                )}
+                {authForm.email && !emailError && !isCheckingEmail && validateEmailFormat(authForm.email) && (
+                  <p className="text-xs mt-1 text-green-600">
+                    ✓ Email hợp lệ
+                  </p>
+                )}
               </div>
               
               <div>
@@ -433,9 +538,10 @@ function App() {
               
               <button
                 onClick={handleAuth}
-                className="w-full bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition"
+                disabled={isCheckingEmail}
+                className="w-full bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
               >
-                {authMode === 'login' ? 'Đăng Nhập' : 'Đăng Ký'}
+                {isCheckingEmail ? 'Đang kiểm tra...' : (authMode === 'login' ? 'Đăng Nhập' : 'Đăng Ký')}
               </button>
             </div>
             
@@ -445,6 +551,7 @@ function App() {
                 onClick={() => {
                   setAuthMode(authMode === 'login' ? 'register' : 'login');
                   setAuthError('');
+                  setEmailError('');
                 }}
                 className="text-blue-600 font-semibold hover:underline"
               >
@@ -516,21 +623,21 @@ function App() {
                     <h3 className="font-bold text-lg mb-2 text-gray-800">{product.name}</h3>
                     <p className="text-gray-600 text-sm mb-4 flex-grow">{product.description}</p>
                     <div className="mt-auto">
-                        <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center justify-between mb-4">
                         <span className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded">
-                            {product.brand}
+                          {product.brand}
                         </span>
                         <span className="text-lg font-bold text-blue-600">
-                            {product.price.toLocaleString('vi-VN')}đ
+                          {product.price.toLocaleString('vi-VN')}đ
                         </span>
-                        </div>
-                        <button
+                      </div>
+                      <button
                         onClick={() => handleAddToCart(product.id)}
                         className="w-full bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition flex items-center justify-center gap-2"
-                        >
+                      >
                         <ShoppingCart size={18} />
                         Thêm vào giỏ
-                        </button>
+                      </button>
                     </div>
                   </div>
                 </div>
