@@ -219,6 +219,9 @@ function App() {
   const [authForm, setAuthForm] = useState({ username: '', email: '', password: '', confirmPassword: '' });
   const [authError, setAuthError] = useState('');
   const [emailError, setEmailError] = useState('');
+  const [usernameError, setUsernameError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [confirmPasswordError, setConfirmPasswordError] = useState('');
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
 
   // Load user from session
@@ -240,6 +243,28 @@ function App() {
       setCart(mockBackend.getCart(currentUser.id));
     }
   }, [currentUser]);
+
+  // Validate username
+  const validateUsername = (username) => {
+    setUsernameError('');
+    
+    if (!username) {
+      setUsernameError('Tên người dùng không được để trống!');
+      return false;
+    }
+    
+    if (username.length < 3) {
+      setUsernameError('Tên người dùng phải có ít nhất 3 ký tự!');
+      return false;
+    }
+    
+    if (username.length > 50) {
+      setUsernameError('Tên người dùng không được quá 50 ký tự!');
+      return false;
+    }
+    
+    return true;
+  };
 
   // Validate email format
   const validateEmailFormat = (email) => {
@@ -321,6 +346,17 @@ function App() {
   const handleAuth = async () => {
     setAuthError('');
     setEmailError('');
+    setUsernameError('');
+    setPasswordError('');
+    setConfirmPasswordError('');
+
+    // Validate username (chỉ khi đăng ký)
+    if (authMode === 'register') {
+      const usernameValid = validateUsername(authForm.username);
+      if (!usernameValid) {
+        return;
+      }
+    }
 
     // Validate email
     const emailValid = await validateEmail(authForm.email);
@@ -329,21 +365,15 @@ function App() {
     }
 
     // Validate password
-    const pwdError = validatePassword(authForm.password);
+    const pwdError = validatePassword(authForm.password, true);
     if (pwdError) {
-      setAuthError(pwdError);
       return;
     }
 
     // Validate confirm password (chỉ khi đăng ký)
     if (authMode === 'register') {
-      if (!authForm.confirmPassword) {
-        setAuthError('Vui lòng xác nhận mật khẩu!');
-        return;
-      }
-      
-      if (authForm.password !== authForm.confirmPassword) {
-        setAuthError('Mật khẩu xác nhận không khớp!');
+      const confirmValid = validateConfirmPassword(authForm.confirmPassword, authForm.password);
+      if (!confirmValid) {
         return;
       }
     }
@@ -473,20 +503,40 @@ function App() {
             <div className="space-y-4">
               {authMode === 'register' && (
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700">Tên người dùng</label>
+                  <label className="block text-sm font-medium mb-1 text-gray-700">
+                    Tên người dùng <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="text"
                     required
                     value={authForm.username}
-                    onChange={(e) => setAuthForm({...authForm, username: e.target.value})}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white text-gray-900"
+                    onChange={(e) => {
+                      setAuthForm({...authForm, username: e.target.value});
+                      setUsernameError('');
+                    }}
+                    onBlur={() => validateUsername(authForm.username)}
+                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white text-gray-900 ${
+                      usernameError ? 'border-red-500' : 'border-gray-300'
+                    }`}
                     placeholder="Nhập tên người dùng"
                   />
+                  {usernameError && (
+                    <p className="text-xs mt-1 text-red-600">
+                      ⚠️ {usernameError}
+                    </p>
+                  )}
+                  {authForm.username && !usernameError && authForm.username.length >= 3 && (
+                    <p className="text-xs mt-1 text-green-600">
+                      ✓ Tên người dùng hợp lệ
+                    </p>
+                  )}
                 </div>
               )}
               
               <div>
-                <label className="block text-sm font-medium mb-1 text-gray-700">Email</label>
+                <label className="block text-sm font-medium mb-1 text-gray-700">
+                  Email <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="email"
                   required
@@ -520,16 +570,27 @@ function App() {
               
               <div>
                 <label className="block text-sm font-medium mb-1 text-gray-700">
-                  Mật khẩu (8-16 ký tự, phải có chữ HOA, thường, số, ký tự đặc biệt)
+                  Mật khẩu (8-16 ký tự, phải có chữ HOA, thường, số, ký tự đặc biệt) <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="password"
                   required
                   value={authForm.password}
-                  onChange={(e) => setAuthForm({...authForm, password: e.target.value})}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white text-gray-900"
+                  onChange={(e) => {
+                    setAuthForm({...authForm, password: e.target.value});
+                    setPasswordError('');
+                  }}
+                  onBlur={() => validatePassword(authForm.password, true)}
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white text-gray-900 ${
+                    passwordError ? 'border-red-500' : 'border-gray-300'
+                  }`}
                   placeholder="Nhập mật khẩu (VD: Pass@123)"
                 />
+                {passwordError && (
+                  <p className="text-xs mt-1 text-red-600">
+                    ⚠️ {passwordError}
+                  </p>
+                )}
                 {authForm.password && (
                   <div className="mt-2 space-y-1">
                     <p className={`text-xs ${authForm.password.length >= 8 && authForm.password.length <= 16 ? 'text-green-600' : 'text-red-600'}`}>
@@ -560,15 +621,23 @@ function App() {
                     type="password"
                     required
                     value={authForm.confirmPassword}
-                    onChange={(e) => setAuthForm({...authForm, confirmPassword: e.target.value})}
+                    onChange={(e) => {
+                      setAuthForm({...authForm, confirmPassword: e.target.value});
+                      setConfirmPasswordError('');
+                    }}
+                    onBlur={() => validateConfirmPassword(authForm.confirmPassword, authForm.password)}
                     className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white text-gray-900 ${
-                      authForm.confirmPassword && authForm.password !== authForm.confirmPassword 
-                        ? 'border-red-500' 
-                        : 'border-gray-300'
+                      confirmPasswordError ? 'border-red-500' : 
+                      (authForm.confirmPassword && authForm.password !== authForm.confirmPassword ? 'border-red-500' : 'border-gray-300')
                     }`}
                     placeholder="Nhập lại mật khẩu"
                   />
-                  {authForm.confirmPassword && (
+                  {confirmPasswordError && (
+                    <p className="text-xs mt-1 text-red-600">
+                      ⚠️ {confirmPasswordError}
+                    </p>
+                  )}
+                  {authForm.confirmPassword && !confirmPasswordError && (
                     <p className={`text-xs mt-1 ${
                       authForm.password === authForm.confirmPassword 
                         ? 'text-green-600' 
@@ -590,6 +659,9 @@ function App() {
                   setAuthMode(authMode === 'login' ? 'register' : 'login');
                   setAuthError('');
                   setEmailError('');
+                  setUsernameError('');
+                  setPasswordError('');
+                  setConfirmPasswordError('');
                   setAuthForm({ username: '', email: '', password: '', confirmPassword: '' });
                 }}
                 className="text-blue-600 font-semibold hover:underline"
