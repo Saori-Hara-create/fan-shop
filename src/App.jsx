@@ -501,6 +501,7 @@ function App() {
               </h2>
             
             <div className="space-y-4">
+              {/* USERNAME - CHỈ HIỆN KHI ĐĂNG KÝ */}
               {authMode === 'register' && (
                 <div>
                   <label className="block text-sm font-medium mb-1 text-gray-700">
@@ -533,6 +534,7 @@ function App() {
                 </div>
               )}
               
+              {/* EMAIL */}
               <div>
                 <label className="block text-sm font-medium mb-1 text-gray-700">
                   Email <span className="text-red-500">*</span>
@@ -568,6 +570,7 @@ function App() {
                 )}
               </div>
               
+              {/* PASSWORD */}
               <div>
                 <label className="block text-sm font-medium mb-1 text-gray-700">
                   Mật khẩu (8-16 ký tự, phải có chữ HOA, thường, số, ký tự đặc biệt) <span className="text-red-500">*</span>
@@ -612,6 +615,7 @@ function App() {
                 )}
               </div>
               
+              {/* CONFIRM PASSWORD - CHỈ HIỆN KHI ĐĂNG KÝ */}
               {authMode === 'register' && (
                 <div>
                   <label className="block text-sm font-medium mb-1 text-gray-700">
