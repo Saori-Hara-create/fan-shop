@@ -216,7 +216,7 @@ function App() {
   
   // Auth states
   const [authMode, setAuthMode] = useState('login');
-  const [authForm, setAuthForm] = useState({ username: '', email: '', password: '' });
+  const [authForm, setAuthForm] = useState({ username: '', email: '', password: '', confirmPassword: '' });
   const [authError, setAuthError] = useState('');
   const [emailError, setEmailError] = useState('');
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
@@ -335,13 +335,26 @@ function App() {
       return;
     }
 
+    // Validate confirm password (chỉ khi đăng ký)
+    if (authMode === 'register') {
+      if (!authForm.confirmPassword) {
+        setAuthError('Vui lòng xác nhận mật khẩu!');
+        return;
+      }
+      
+      if (authForm.password !== authForm.confirmPassword) {
+        setAuthError('Mật khẩu xác nhận không khớp!');
+        return;
+      }
+    }
+
     if (authMode === 'register') {
       const result = mockBackend.register(authForm.username, authForm.email, authForm.password);
       if (result.success) {
         setCurrentUser(result.user);
         sessionStorage.setItem('currentUser', JSON.stringify(result.user));
         setCurrentPage('home');
-        setAuthForm({ username: '', email: '', password: '' });
+        setAuthForm({ username: '', email: '', password: '', confirmPassword: '' });
       } else {
         setAuthError(result.message);
       }
@@ -351,7 +364,7 @@ function App() {
         setCurrentUser(result.user);
         sessionStorage.setItem('currentUser', JSON.stringify(result.user));
         setCurrentPage('home');
-        setAuthForm({ username: '', email: '', password: '' });
+        setAuthForm({ username: '', email: '', password: '', confirmPassword: '' });
       } else {
         setAuthError(result.message);
       }
@@ -507,7 +520,7 @@ function App() {
               
               <div>
                 <label className="block text-sm font-medium mb-1 text-gray-700">
-                  Mật khẩu (8-16 ký tự, phải có chữ HOA, thường, ký tự đặc biệt)
+                  Mật khẩu (8-16 ký tự, phải có chữ HOA, thường, số, ký tự đặc biệt)
                 </label>
                 <input
                   type="password"
@@ -520,7 +533,7 @@ function App() {
                 {authForm.password && (
                   <div className="mt-2 space-y-1">
                     <p className={`text-xs ${authForm.password.length >= 8 && authForm.password.length <= 16 ? 'text-green-600' : 'text-red-600'}`}>
-                      ✓ Độ dài: {authForm.password.length}/16 ký tự
+                      {authForm.password.length >= 8 && authForm.password.length <= 16 ? '✓' : '✗'} Độ dài: {authForm.password.length}/16 ký tự
                     </p>
                     <p className={`text-xs ${/[A-Z]/.test(authForm.password) ? 'text-green-600' : 'text-red-600'}`}>
                       {/[A-Z]/.test(authForm.password) ? '✓' : '✗'} Có chữ IN HOA
@@ -528,12 +541,46 @@ function App() {
                     <p className={`text-xs ${/[a-z]/.test(authForm.password) ? 'text-green-600' : 'text-red-600'}`}>
                       {/[a-z]/.test(authForm.password) ? '✓' : '✗'} Có chữ thường
                     </p>
+                    <p className={`text-xs ${/[0-9]/.test(authForm.password) ? 'text-green-600' : 'text-red-600'}`}>
+                      {/[0-9]/.test(authForm.password) ? '✓' : '✗'} Có chữ số (0-9)
+                    </p>
                     <p className={`text-xs ${/[!@#$%^&*(),.?":{}|<>]/.test(authForm.password) ? 'text-green-600' : 'text-red-600'}`}>
                       {/[!@#$%^&*(),.?":{}|<>]/.test(authForm.password) ? '✓' : '✗'} Có ký tự đặc biệt (!@#$%...)
                     </p>
                   </div>
                 )}
               </div>
+              
+              {authMode === 'register' && (
+                <div>
+                  <label className="block text-sm font-medium mb-1 text-gray-700">
+                    Xác nhận mật khẩu <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    value={authForm.confirmPassword}
+                    onChange={(e) => setAuthForm({...authForm, confirmPassword: e.target.value})}
+                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white text-gray-900 ${
+                      authForm.confirmPassword && authForm.password !== authForm.confirmPassword 
+                        ? 'border-red-500' 
+                        : 'border-gray-300'
+                    }`}
+                    placeholder="Nhập lại mật khẩu"
+                  />
+                  {authForm.confirmPassword && (
+                    <p className={`text-xs mt-1 ${
+                      authForm.password === authForm.confirmPassword 
+                        ? 'text-green-600' 
+                        : 'text-red-600'
+                    }`}>
+                      {authForm.password === authForm.confirmPassword 
+                        ? '✓ Mật khẩu khớp!' 
+                        : '✗ Mật khẩu không khớp!'}
+                    </p>
+                  )}
+                </div>
+              )}
               
               {authError && (
                 <div className="bg-red-50 text-red-600 px-4 py-2 rounded-lg text-sm">
@@ -543,7 +590,7 @@ function App() {
               
               <button
                 onClick={handleAuth}
-                disabled={isCheckingEmail}
+                disabled={isCheckingEmail || (authMode === 'register' && (!authForm.password || !authForm.confirmPassword || authForm.password !== authForm.confirmPassword))}
                 className="w-full bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
               >
                 {isCheckingEmail ? 'Đang kiểm tra...' : (authMode === 'login' ? 'Đăng Nhập' : 'Đăng Ký')}
@@ -557,6 +604,7 @@ function App() {
                   setAuthMode(authMode === 'login' ? 'register' : 'login');
                   setAuthError('');
                   setEmailError('');
+                  setAuthForm({ username: '', email: '', password: '', confirmPassword: '' });
                 }}
                 className="text-blue-600 font-semibold hover:underline"
               >
