@@ -583,7 +583,7 @@ function App() {
                     setAuthForm({...authForm, password: e.target.value});
                     setPasswordError('');
                   }}
-                  onBlur={() => validatePassword(authForm.password, true)}
+                  onBlur={() => validatePassword(authForm.password)}
                   className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white text-gray-900 ${
                     passwordError ? 'border-red-500' : 'border-gray-300'
                   }`}
@@ -594,7 +594,7 @@ function App() {
                     ⚠️ {passwordError}
                   </p>
                 )}
-                {authForm.password && (
+                {authForm.password && !passwordError && (
                   <div className="mt-2 space-y-1">
                     <p className={`text-xs ${authForm.password.length >= 8 && authForm.password.length <= 16 ? 'text-green-600' : 'text-red-600'}`}>
                       {authForm.password.length >= 8 && authForm.password.length <= 16 ? '✓' : '✗'} Độ dài: {authForm.password.length}/16 ký tự
@@ -641,15 +641,9 @@ function App() {
                       ⚠️ {confirmPasswordError}
                     </p>
                   )}
-                  {authForm.confirmPassword && !confirmPasswordError && (
-                    <p className={`text-xs mt-1 ${
-                      authForm.password === authForm.confirmPassword 
-                        ? 'text-green-600' 
-                        : 'text-red-600'
-                    }`}>
-                      {authForm.password === authForm.confirmPassword 
-                        ? '✓ Mật khẩu khớp!' 
-                        : '✗ Mật khẩu không khớp!'}
+                  {authForm.confirmPassword && !confirmPasswordError && authForm.password && (
+                    <p className="text-xs mt-1 text-green-600">
+                      ✓ Mật khẩu khớp!
                     </p>
                   )}
                 </div>
