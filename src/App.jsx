@@ -581,20 +581,6 @@ function App() {
                   )}
                 </div>
               )}
-              
-              {authError && (
-                <div className="bg-red-50 text-red-600 px-4 py-2 rounded-lg text-sm">
-                  {authError}
-                </div>
-              )}
-              
-              <button
-                onClick={handleAuth}
-                disabled={isCheckingEmail || (authMode === 'register' && (!authForm.password || !authForm.confirmPassword || authForm.password !== authForm.confirmPassword))}
-                className="w-full bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
-              >
-                {isCheckingEmail ? 'Đang kiểm tra...' : (authMode === 'login' ? 'Đăng Nhập' : 'Đăng Ký')}
-              </button>
             </div>
             
             <p className="text-center mt-4 text-sm text-gray-600">
