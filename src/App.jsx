@@ -378,10 +378,12 @@ function App() {
     }
 
     // Validate password
-    const pwdError = validatePassword(authForm.password, true);
+    const pwdError = validatePassword(authForm.password);
     if (pwdError) {
+      setPasswordError(pwdError);
       return;
     }
+
 
     // Validate confirm password (chỉ khi đăng ký)
     if (authMode === 'register') {
