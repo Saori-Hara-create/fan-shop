@@ -514,13 +514,6 @@ function App() {
               </h2>
             
             <div className="space-y-4">
-            <button
-            onClick={handleAuth}
-              className="w-full mt-6 bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition"
->
-                {authMode === 'login' ? 'Đăng nhập' : 'Đăng ký'}
-            </button>
-
               {/* USERNAME - CHỈ HIỆN KHI ĐĂNG KÝ */}
               {authMode === 'register' && (
                 <div>
@@ -669,7 +662,13 @@ function App() {
                 </div>
               )}
             </div>
-            
+            <button
+  onClick={handleAuth}
+  className="w-full mt-6 bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition"
+>
+  {authMode === 'login' ? 'Đăng nhập' : 'Đăng ký'}
+</button>
+
             <p className="text-center mt-4 text-sm text-gray-600">
               {authMode === 'login' ? 'Chưa có tài khoản? ' : 'Đã có tài khoản? '}
               <button
