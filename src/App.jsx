@@ -341,6 +341,19 @@ function App() {
     
     return '';
   };
+  const validateConfirmPassword = (confirmPassword, password) => {
+  if (!confirmPassword) {
+    setConfirmPasswordError('Vui lòng xác nhận mật khẩu!');
+    return false;
+  }
+
+  if (confirmPassword !== password) {
+    setConfirmPasswordError('Mật khẩu xác nhận không khớp!');
+    return false;
+  }
+
+  return true;
+};
 
   // Handle auth
   const handleAuth = async () => {
