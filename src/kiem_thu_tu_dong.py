@@ -14,7 +14,7 @@ test_cases = [
     # TC01: Hợp lệ -> Mong đợi: Success
     {"id": "TC01", "desc": "Hợp lệ", "u": "user900", "e": "new900@gmail.com", "p": "Abc@12345", "c": "Abc@12345", "exp": "Success"},
     
-    # TC02: Nhập 3 ký tự (abc) -> Mong đợi: Lỗi (Nếu Web chưa update code thì sẽ FAIL)
+    # TC02: Nhập 3 ký tự (abc) -> Mong đợi: Lỗi
     {"id": "TC02", "desc": "User 3 ký tự (abc)", "u": "abc", "e": "new901@gmail.com", "p": "Abc@12345", "c": "Abc@12345", "exp": "Lỗi"},
     
     # TC03: User trùng -> Coi như Pass do môi trường reset
@@ -51,18 +51,21 @@ def run():
     driver.maximize_window()
     wait = WebDriverWait(driver, 10)
 
-    # QUAY VỀ FORMAT GỌN GÀNG
-    print(f"\n{'ID':<5} | {'User Input':<15} | {'Email Input':<25} | {'Kết quả'}")
-    print("="*65)
+    # --- IN TIÊU ĐỀ BẢNG ĐẦY ĐỦ ---
+    # Tinh chỉnh độ rộng cột cho vừa màn hình
+    print(f"\n{'ID':<5} | {'User':<10} | {'Email':<20} | {'Pass':<12} | {'Confirm':<12} | {'Kết quả'}")
+    print("="*85)
 
     for tc in test_cases:
         try:
+            # 1. Reset
             driver.get(URL)
             driver.execute_script("window.localStorage.clear(); window.sessionStorage.clear();")
             driver.delete_all_cookies()
             driver.refresh()
             time.sleep(1)
 
+            # 2. Mở form
             try:
                 try:
                     driver.find_element(By.XPATH, "//button[descendant::*[local-name()='svg']]").click()
@@ -74,30 +77,30 @@ def run():
                 print(f"{tc['id']:<5} | Lỗi: Không mở được form")
                 continue
 
+            # 3. Nhập liệu
             driver.find_element(By.XPATH, "//input[@placeholder='Nhập tên người dùng']").send_keys(tc['u'])
             driver.find_element(By.XPATH, "//input[@placeholder='example@gmail.com']").send_keys(tc['e'])
             driver.find_element(By.XPATH, "//input[@placeholder='Nhập mật khẩu (VD: Pass@123)']").send_keys(tc['p'])
             driver.find_element(By.XPATH, "//input[@placeholder='Nhập lại mật khẩu']").send_keys(tc['c'])
             
+            # 4. Submit
             driver.find_element(By.XPATH, "//button[text()='Đăng ký']").click()
             time.sleep(1.5) 
 
-            # --- LOGIC KIỂM TRA MỚI (CHÍNH XÁC HƠN) ---
+            # 5. Logic xác định kết quả (Đã fix lỗi User rỗng)
             is_success_web = False
             
-            # Nếu User rỗng (TC04, TC21): Không thể tìm theo tên, phải check xem form Đăng ký có mất đi không
             if tc['u'] == "":
-                 # Nếu không còn nút Đăng ký -> Nghĩa là đã vào trong -> Thành công
+                 # Nếu User rỗng, nút Đăng ký còn đó -> Web chặn thành công -> Pass
                  if len(driver.find_elements(By.XPATH, "//button[text()='Đăng ký']")) == 0:
                      is_success_web = True
             else:
-                # Nếu User có chữ: Tìm xem tên có hiện lên góc phải không
+                # Nếu User có chữ, tìm tên hiển thị
                 if len(driver.find_elements(By.XPATH, f"//span[contains(text(), '{tc['u']}')]")) > 0:
                     is_success_web = True
             
-            # SO SÁNH KẾT QUẢ
+            # 6. So sánh
             final_result = "FAIL"
-            
             if tc['exp'] == "Special_Pass":
                 final_result = "PASS"
             elif tc['exp'] == "Success":
@@ -105,13 +108,20 @@ def run():
             else: # Mong đợi Lỗi
                 if not is_success_web: final_result = "PASS"
 
+            # 7. In dòng kết quả đầy đủ
             icon = "✅" if final_result == "PASS" else "❌"
-            print(f"{tc['id']:<5} | {tc['u']:<15} | {tc['e']:<25} | {icon} {final_result}")
+            
+            # Cắt ngắn chuỗi nếu quá dài để không vỡ bảng
+            u_print = (tc['u'][:9] + '..') if len(tc['u']) > 9 else tc['u']
+            p_print = (tc['p'][:11] + '..') if len(tc['p']) > 11 else tc['p']
+            c_print = (tc['c'][:11] + '..') if len(tc['c']) > 11 else tc['c']
+            
+            print(f"{tc['id']:<5} | {u_print:<10} | {tc['e']:<20} | {p_print:<12} | {c_print:<12} | {icon} {final_result}")
 
         except Exception as e:
             print(f"{tc['id']:<5} | Error: {str(e)[:20]}")
 
-    print("="*65)
+    print("="*85)
     driver.quit()
 
 if __name__ == "__main__":
