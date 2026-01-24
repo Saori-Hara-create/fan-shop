@@ -14,7 +14,7 @@ test_cases = [
     # TC01: Hợp lệ -> Mong đợi: Success
     {"id": "TC01", "desc": "Hợp lệ", "u": "user900", "e": "new900@gmail.com", "p": "Abc@12345", "c": "Abc@12345", "exp": "Success"},
     
-    # TC02: Nhập 3 ký tự (abc) -> Mong đợi: Lỗi (Web phải chặn mới là đúng)
+    # TC02: Nhập 3 ký tự (abc) -> Mong đợi: Lỗi (Nếu Web chưa update code thì sẽ FAIL)
     {"id": "TC02", "desc": "User 3 ký tự (abc)", "u": "abc", "e": "new901@gmail.com", "p": "Abc@12345", "c": "Abc@12345", "exp": "Lỗi"},
     
     # TC03: User trùng -> Coi như Pass do môi trường reset
@@ -44,27 +44,25 @@ test_cases = [
 ]
 
 def run():
-    print(f">>> ĐANG CHẠY KIỂM THỬ...")
+    print(f">>> ĐANG CHẠY KIỂM THỬ TỰ ĐỘNG...")
     options = webdriver.ChromeOptions()
     options.add_argument("--disable-search-engine-choice-screen")
     driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
     driver.maximize_window()
     wait = WebDriverWait(driver, 10)
 
-    # ĐỊNH DẠNG CỘT HIỂN THỊ
-    print(f"\n{'ID':<5} | {'User Input':<12} | {'Trạng thái thực tế':<25} | {'Kết quả'}")
-    print("="*70)
+    # QUAY VỀ FORMAT GỌN GÀNG
+    print(f"\n{'ID':<5} | {'User Input':<15} | {'Email Input':<25} | {'Kết quả'}")
+    print("="*65)
 
     for tc in test_cases:
         try:
-            # 1. Reset môi trường
             driver.get(URL)
             driver.execute_script("window.localStorage.clear(); window.sessionStorage.clear();")
             driver.delete_all_cookies()
             driver.refresh()
             time.sleep(1)
 
-            # 2. Mở form
             try:
                 try:
                     driver.find_element(By.XPATH, "//button[descendant::*[local-name()='svg']]").click()
@@ -76,55 +74,44 @@ def run():
                 print(f"{tc['id']:<5} | Lỗi: Không mở được form")
                 continue
 
-            # 3. Nhập liệu
             driver.find_element(By.XPATH, "//input[@placeholder='Nhập tên người dùng']").send_keys(tc['u'])
             driver.find_element(By.XPATH, "//input[@placeholder='example@gmail.com']").send_keys(tc['e'])
             driver.find_element(By.XPATH, "//input[@placeholder='Nhập mật khẩu (VD: Pass@123)']").send_keys(tc['p'])
             driver.find_element(By.XPATH, "//input[@placeholder='Nhập lại mật khẩu']").send_keys(tc['c'])
             
-            # 4. Submit
             driver.find_element(By.XPATH, "//button[text()='Đăng ký']").click()
             time.sleep(1.5) 
 
-            # 5. XÁC ĐỊNH TRẠNG THÁI THỰC TẾ (ACTUAL)
+            # --- LOGIC KIỂM TRA MỚI (CHÍNH XÁC HƠN) ---
             is_success_web = False
-            actual_text = ""
-
-            # Nếu tìm thấy tên user xuất hiện trên web -> Đăng ký thành công
-            if len(driver.find_elements(By.XPATH, f"//span[contains(text(), '{tc['u']}')]")) > 0:
-                is_success_web = True
-                actual_text = "Đăng ký thành công"
-            else:
-                is_success_web = False
-                actual_text = "Đăng ký không thành công"
             
-            # 6. SO SÁNH ĐỂ RA KẾT QUẢ PASS/FAIL
+            # Nếu User rỗng (TC04, TC21): Không thể tìm theo tên, phải check xem form Đăng ký có mất đi không
+            if tc['u'] == "":
+                 # Nếu không còn nút Đăng ký -> Nghĩa là đã vào trong -> Thành công
+                 if len(driver.find_elements(By.XPATH, "//button[text()='Đăng ký']")) == 0:
+                     is_success_web = True
+            else:
+                # Nếu User có chữ: Tìm xem tên có hiện lên góc phải không
+                if len(driver.find_elements(By.XPATH, f"//span[contains(text(), '{tc['u']}')]")) > 0:
+                    is_success_web = True
+            
+            # SO SÁNH KẾT QUẢ
             final_result = "FAIL"
             
-            # Nếu case đặc biệt (trùng lặp) -> Luôn PASS
             if tc['exp'] == "Special_Pass":
                 final_result = "PASS"
-            
-            # Nếu mong đợi Success
             elif tc['exp'] == "Success":
-                if is_success_web: # Thực tế cũng thành công
-                    final_result = "PASS"
-            
-            # Nếu mong đợi Lỗi (các case nhập sai)
-            else: 
-                if not is_success_web: # Thực tế là KHÔNG thành công (đúng ý mong đợi)
-                    final_result = "PASS"
+                if is_success_web: final_result = "PASS"
+            else: # Mong đợi Lỗi
+                if not is_success_web: final_result = "PASS"
 
-            # In ra màn hình
             icon = "✅" if final_result == "PASS" else "❌"
-            
-            # In dòng kết quả với định dạng bạn yêu cầu
-            print(f"{tc['id']:<5} | {tc['u']:<12} | {actual_text:<25} | {icon} {final_result}")
+            print(f"{tc['id']:<5} | {tc['u']:<15} | {tc['e']:<25} | {icon} {final_result}")
 
         except Exception as e:
             print(f"{tc['id']:<5} | Error: {str(e)[:20]}")
 
-    print("="*70)
+    print("="*65)
     driver.quit()
 
 if __name__ == "__main__":
