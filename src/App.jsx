@@ -253,10 +253,10 @@ function App() {
       return false;
     }
     
-    if (username.length < 3) {
-      setUsernameError('Tên người dùng phải có ít nhất 3 ký tự!');
-      return false;
-    }
+    if (username.length <= 3) { 
+    setUsernameError('Tên người dùng phải nhiều hơn 3 ký tự (từ 4 ký tự trở lên)!');
+    return false;
+}
     
     if (username.length > 50) {
       setUsernameError('Tên người dùng không được quá 50 ký tự!');
