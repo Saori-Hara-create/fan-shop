@@ -11,27 +11,24 @@ URL = "https://saori-hara-create.github.io/fan-shop/"
 
 # --- DỮ LIỆU KIỂM THỬ ---
 test_cases = [
-    # TC01: Hợp lệ -> Mong đợi: Success
     {"id": "TC01", "desc": "Hợp lệ", "u": "user900", "e": "new900@gmail.com", "p": "Abc@12345", "c": "Abc@12345", "exp": "Success"},
-    
-    # TC02: Nhập 3 ký tự (abc) -> Mong đợi: Lỗi
     {"id": "TC02", "desc": "User 3 ký tự (abc)", "u": "abc", "e": "new901@gmail.com", "p": "Abc@12345", "c": "Abc@12345", "exp": "Lỗi"},
     
-    # TC03: User trùng -> Coi như Pass do môi trường reset
-    {"id": "TC03", "desc": "User đã tồn tại", "u": "user123", "e": "new902@gmail.com", "p": "Abc@12345", "c": "Abc@12345", "exp": "Special_Pass"},
+    # TC03: Sẽ FAIL vì DB bị reset, web cho đăng ký thành công
+    {"id": "TC03", "desc": "User đã tồn tại", "u": "user123", "e": "new902@gmail.com", "p": "Abc@12345", "c": "Abc@12345", "exp": "Lỗi"},
     
-    # Các case lỗi khác
     {"id": "TC04", "desc": "User bỏ trống", "u": "", "e": "new903@gmail.com", "p": "Abc@12345", "c": "Abc@12345", "exp": "trống"},
     {"id": "TC05", "desc": "Email sai format", "u": "user904", "e": "new904", "p": "Abc@12345", "c": "Abc@12345", "exp": "hợp lệ"},
-    {"id": "TC06", "desc": "Email đã tồn tại", "u": "user905", "e": "exist@gmail.com", "p": "Abc@12345", "c": "Abc@12345", "exp": "Special_Pass"},
+    
+    # TC06: Sẽ FAIL tương tự TC03
+    {"id": "TC06", "desc": "Email đã tồn tại", "u": "user905", "e": "exist@gmail.com", "p": "Abc@12345", "c": "Abc@12345", "exp": "Lỗi"},
+    
     {"id": "TC07", "desc": "Email bỏ trống", "u": "user906", "e": "", "p": "Abc@12345", "c": "Abc@12345", "exp": "trống"},
     {"id": "TC08", "desc": "Pass ngắn", "u": "user907", "e": "new907@gmail.com", "p": "Abc@12", "c": "Abc@12", "exp": "Mật khẩu"},
     {"id": "TC09", "desc": "Pass quá dài", "u": "user908", "e": "new908@gmail.com", "p": "Abc@123456789012345", "c": "Abc@123456789012345", "exp": "Mật khẩu"},
     {"id": "TC10", "desc": "Pass bỏ trống", "u": "user909", "e": "new909@gmail.com", "p": "", "c": "", "exp": "trống"},
     {"id": "TC11", "desc": "Confirm sai", "u": "user910", "e": "new910@gmail.com", "p": "Abc@12345", "c": "Abc@1234", "exp": "khớp"},
     {"id": "TC12", "desc": "Confirm bỏ trống", "u": "user911", "e": "new911@gmail.com", "p": "Abc@12345", "c": "", "exp": "trống"},
-
-    # Bảng quyết định
     {"id": "TC13", "desc": "DT: Hợp lệ", "u": "user900", "e": "new900@gmail.com", "p": "Ab@12345", "c": "Ab@12345", "exp": "Success"},
     {"id": "TC14", "desc": "DT: Confirm sai", "u": "user901", "e": "new901@gmail.com", "p": "Ab@12345", "c": "Ab@1234", "exp": "khớp"},
     {"id": "TC15", "desc": "DT: Thiếu Confirm", "u": "user902", "e": "new902@gmail.com", "p": "Ab@12345", "c": "", "exp": "trống"},
@@ -44,37 +41,36 @@ test_cases = [
 ]
 
 def run():
-    print(f">>> ĐANG CHẠY KIỂM THỬ TỰ ĐỘNG...")
+    print(f">>> ĐANG CHẠY KIỂM THỬ (BẢN ĐƠN GIẢN - KHÔNG XỬ LÝ TRÙNG)...")
     options = webdriver.ChromeOptions()
     options.add_argument("--disable-search-engine-choice-screen")
     driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
     driver.maximize_window()
     wait = WebDriverWait(driver, 10)
 
-    # --- IN TIÊU ĐỀ BẢNG ĐẦY ĐỦ ---
-    # Tinh chỉnh độ rộng cột cho vừa màn hình
-    print(f"\n{'ID':<5} | {'User':<10} | {'Email':<20} | {'Pass':<12} | {'Confirm':<12} | {'Kết quả'}")
-    print("="*85)
+    print(f"\n{'ID':<5} | {'User':<10} | {'Email':<20} | {'Pass':<10} | {'Trạng thái':<24} | {'Kết quả'}")
+    print("="*100)
 
     for tc in test_cases:
         try:
-            # 1. Reset
+            # 1. Reset môi trường: Xóa sạch dữ liệu cũ để tránh lỗi vặt
             driver.get(URL)
             driver.execute_script("window.localStorage.clear(); window.sessionStorage.clear();")
             driver.delete_all_cookies()
             driver.refresh()
             time.sleep(1)
 
-            # 2. Mở form
+            # 2. Mở form Đăng ký
             try:
+                # Tìm nút icon hoặc nút chữ
                 try:
                     driver.find_element(By.XPATH, "//button[descendant::*[local-name()='svg']]").click()
                 except:
                     driver.find_element(By.XPATH, "//button[contains(text(), 'Đăng nhập')]").click()
                 
                 wait.until(EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Đăng ký ngay')]"))).click()
-            except:
-                print(f"{tc['id']:<5} | Lỗi: Không mở được form")
+            except Exception as e:
+                print(f"{tc['id']:<5} | Lỗi: Không mở được form đăng ký.")
                 continue
 
             # 3. Nhập liệu
@@ -87,41 +83,39 @@ def run():
             driver.find_element(By.XPATH, "//button[text()='Đăng ký']").click()
             time.sleep(1.5) 
 
-            # 5. Logic xác định kết quả (Đã fix lỗi User rỗng)
+            # 5. Kiểm tra kết quả
             is_success_web = False
             
             if tc['u'] == "":
-                 # Nếu User rỗng, nút Đăng ký còn đó -> Web chặn thành công -> Pass
                  if len(driver.find_elements(By.XPATH, "//button[text()='Đăng ký']")) == 0:
-                     is_success_web = True
+                     is_success_web = True 
             else:
-                # Nếu User có chữ, tìm tên hiển thị
+                # Nếu thấy tên User hiện lên ở góc phải -> Thành công
                 if len(driver.find_elements(By.XPATH, f"//span[contains(text(), '{tc['u']}')]")) > 0:
                     is_success_web = True
             
-            # 6. So sánh
+            status_text = "Đăng ký thành công" if is_success_web else "Đăng ký thất bại"
+
+            # 6. Đánh giá PASS/FAIL
             final_result = "FAIL"
-            if tc['exp'] == "Special_Pass":
-                final_result = "PASS"
-            elif tc['exp'] == "Success":
+            
+            if tc['exp'] == "Success":
                 if is_success_web: final_result = "PASS"
-            else: # Mong đợi Lỗi
+            else: 
+                # Nếu mong đợi Lỗi mà web lại cho thành công -> FAIL (Đúng ý TC03, TC06)
                 if not is_success_web: final_result = "PASS"
 
-            # 7. In dòng kết quả đầy đủ
+            # In ra
             icon = "✅" if final_result == "PASS" else "❌"
+            u_pr = (tc['u'][:8] + '..') if len(tc['u']) > 8 else tc['u']
+            p_pr = (tc['p'][:8] + '..') if len(tc['p']) > 8 else tc['p']
             
-            # Cắt ngắn chuỗi nếu quá dài để không vỡ bảng
-            u_print = (tc['u'][:9] + '..') if len(tc['u']) > 9 else tc['u']
-            p_print = (tc['p'][:11] + '..') if len(tc['p']) > 11 else tc['p']
-            c_print = (tc['c'][:11] + '..') if len(tc['c']) > 11 else tc['c']
-            
-            print(f"{tc['id']:<5} | {u_print:<10} | {tc['e']:<20} | {p_print:<12} | {c_print:<12} | {icon} {final_result}")
+            print(f"{tc['id']:<5} | {u_pr:<10} | {tc['e']:<20} | {p_pr:<10} | {status_text:<24} | {icon} {final_result}")
 
         except Exception as e:
-            print(f"{tc['id']:<5} | Error: {str(e)[:20]}")
+            print(f"{tc['id']:<5} | Error: {str(e)[:30]}")
 
-    print("="*85)
+    print("="*100)
     driver.quit()
 
 if __name__ == "__main__":
