@@ -599,7 +599,7 @@ function App() {
                     setAuthForm({...authForm, password: e.target.value});
                     setPasswordError('');
                   }}
-                  onBlur={() => validatePassword(authForm.password)}
+                  onBlur={() => setPasswordError(validatePassword(authForm.password))}
                   className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white text-gray-900 ${
                     passwordError ? 'border-red-500' : 'border-gray-300'
                   }`}
