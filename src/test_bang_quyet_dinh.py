@@ -7,10 +7,10 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 
-# --- CẤU HÌNH ---
+
 URL = "https://saori-hara-create.github.io/fan-shop/"
 
-# --- DỮ LIỆU KIỂM THỬ: BẢNG QUYẾT ĐỊNH (TC13 - TC21) ---
+
 test_cases = [
     {"id": "TC13", "desc": "DT: Hợp lệ", "u": "user900", "e": "new900@gmail.com", "p": "Ab@12345", "c": "Ab@12345", "exp": "Success"},
     {"id": "TC14", "desc": "DT: Confirm sai", "u": "user901", "e": "new901@gmail.com", "p": "Ab@12345", "c": "Ab@1234", "exp": "khớp"},
