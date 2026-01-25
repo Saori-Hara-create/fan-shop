@@ -361,91 +361,71 @@ function App() {
 };
 
   // Handle auth
+  // Handle auth
   const handleAuth = async () => {
+    // 1. Reset lỗi cũ
     setAuthError('');
     setEmailError('');
     setUsernameError('');
     setPasswordError('');
     setConfirmPasswordError('');
 
-    // Validate username (chỉ khi đăng ký)
+    // 2. Validate Username (Chỉ khi đăng ký)
     if (authMode === 'register') {
       const usernameValid = validateUsername(authForm.username);
-      if (!usernameValid) {
-        return;
-      }
+      if (!usernameValid) return;
     }
 
-    // Validate email
+    // 3. Validate Email
     const emailValid = await validateEmail(authForm.email);
-    if (!emailValid) {
-      return;
-    }
+    if (!emailValid) return;
 
-    // Validate password
+    // 4. Validate Password
     const pwdError = validatePassword(authForm.password);
     if (pwdError) {
       setPasswordError(pwdError);
       return;
     }
 
-
-    // Validate confirm password (chỉ khi đăng ký)
+    // 5. Validate Confirm Password (Chỉ khi đăng ký)
     if (authMode === 'register') {
       const confirmValid = validateConfirmPassword(authForm.confirmPassword, authForm.password);
-      if (!confirmValid) {
-        return;
-      }
+      if (!confirmValid) return;
     }
-    const response = isLogin
-      ? mockBackend.login(authForm.username, authForm.password)
+
+    // 6. GỌI BACKEND (Đã sửa lỗi biến isLogin -> authMode)
+    const response = authMode === 'login'
+      ? mockBackend.login(authForm.email, authForm.password) // Login dùng email, không phải username
       : mockBackend.register(authForm.username, authForm.email, authForm.password);
+
+    // 7. XỬ LÝ KẾT QUẢ TRẢ VỀ
     if (response.success) {
-      // Đăng nhập/Đăng ký thành công -> Lưu user và đóng form
-      login(response.user);
-      setShowAuthModal(false);
-      // Reset form
-      setAuthForm({ username: '', email: '', password: '' });
-      setConfirmPassword('');
-    } else {
-      // === PHẦN BẠN ĐANG THIẾU HOẶC SAI ===
-      // Khi Backend trả về lỗi (trùng user/email), ta phải hiển thị nó lên
+      // Thành công -> Lưu user, tắt modal, reset form
+      setCurrentUser(response.user);
+      sessionStorage.setItem('currentUser', JSON.stringify(response.user));
+      setShowAuthModal(false); // Lưu ý: Hàm này trong code gốc của bạn hình như tên là setCurrentPage('home') hoặc setAuthMode?
+      // Dựa theo code cũ của bạn dòng 414:
+      setCurrentPage('home'); 
       
+      setAuthForm({ username: '', email: '', password: '', confirmPassword: '' });
+    } else {
+      // THẤT BẠI -> HIỂN THỊ LỖI CỤ THỂ (Phần quan trọng để Tool Python bắt được)
       const msg = response.message;
       
       if (msg.includes('Tên người dùng')) {
-        setUsernameError(msg); // Hiển thị dòng đỏ dưới ô Username
+        setUsernameError(msg);
       } else if (msg.includes('Email')) {
-        setEmailError(msg);    // Hiển thị dòng đỏ dưới ô Email
+        setEmailError(msg);
       } else if (msg.includes('Mật khẩu')) {
-        setPasswordError(msg); // Hiển thị dòng đỏ dưới ô Password
+        setPasswordError(msg);
       } else {
-        alert(msg); // Các lỗi khác thì hiện popup
+        // Các lỗi chung (ví dụ sai mật khẩu khi login)
+        setAuthError(msg); 
       }
     }
+  
 
-    if (authMode === 'register') {
-      const result = mockBackend.register(authForm.username, authForm.email, authForm.password);
-      if (result.success) {
-        setCurrentUser(result.user);
-        sessionStorage.setItem('currentUser', JSON.stringify(result.user));
-        setCurrentPage('home');
-        setAuthForm({ username: '', email: '', password: '', confirmPassword: '' });
-      } else {
-        setAuthError(result.message);
-      }
-    } else {
-      const result = mockBackend.login(authForm.email, authForm.password);
-      if (result.success) {
-        setCurrentUser(result.user);
-        sessionStorage.setItem('currentUser', JSON.stringify(result.user));
-        setCurrentPage('home');
-        setAuthForm({ username: '', email: '', password: '', confirmPassword: '' });
-      } else {
-        setAuthError(result.message);
-      }
-    }
-  };
+};
 
   const handleLogout = () => {
     setCurrentUser(null);
@@ -894,5 +874,4 @@ function App() {
     </div>
   );
 }
-
 export default App;
