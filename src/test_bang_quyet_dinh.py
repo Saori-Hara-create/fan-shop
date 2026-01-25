@@ -30,10 +30,12 @@ def run():
     driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
     driver.maximize_window()
     wait = WebDriverWait(driver, 10)
-    wrapper = textwrap.TextWrapper(width=45)
+    wrapper = textwrap.TextWrapper(width=40)
 
-    print(f"\n{'ID':<5} | {'User':<10} | {'Email':<20} | {'Pass':<10} | {'Trạng thái (Chi tiết lỗi)':<45} | {'Kết quả'}")
-    print("="*120)
+    # Header bảng (Đã thêm Confirm)
+    header = f"{'ID':<5} | {'User':<10} | {'Email':<18} | {'Pass':<10} | {'Confirm':<10} | {'Trạng thái (Chi tiết lỗi)':<42} | {'Kết quả'}"
+    print("\n" + header)
+    print("="*len(header))
 
     for tc in test_cases:
         try:
@@ -85,7 +87,7 @@ def run():
                     try:
                         errors = driver.find_elements(By.XPATH, "//*[contains(@class, 'text-red')]")
                         found_msgs = [e.text.strip() for e in errors if e.text.strip() != "" and e.text.strip() != "*"]
-                        status_text = f"FAIL: {', '.join(found_msgs) if found_msgs else 'Lỗi (Không tìm thấy text)'}"
+                        status_text = f"FAIL: {', '.join(found_msgs) if found_msgs else 'Lỗi'}"
                     except: status_text = "FAIL: Lỗi hệ thống"
 
             # Đánh giá
@@ -99,11 +101,18 @@ def run():
             icon = "✅" if final_result == "PASS" else "❌"
             u_pr = (tc['u'][:8] + '..') if len(tc['u']) > 8 else tc['u']
             p_pr = (tc['p'][:8] + '..') if len(tc['p']) > 8 else tc['p']
+            c_pr = (tc['c'][:8] + '..') if len(tc['c']) > 8 else tc['c'] # Cắt ngắn
+
             lines = wrapper.wrap(status_text)
             if not lines: lines = [""]
-            print(f"{tc['id']:<5} | {u_pr:<10} | {tc['e']:<20} | {p_pr:<10} | {lines[0]:<45} | {icon} {final_result}")
-            for line in lines[1:]: print(f"{'':<5} | {'':<10} | {'':<20} | {'':<10} | {line:<45} |")
-            print("-" * 120)
+            
+            # Dòng đầu
+            print(f"{tc['id']:<5} | {u_pr:<10} | {tc['e']:<18} | {p_pr:<10} | {c_pr:<10} | {lines[0]:<42} | {icon} {final_result}")
+            
+            # Các dòng sau
+            for line in lines[1:]: 
+                print(f"{'':<5} | {'':<10} | {'':<18} | {'':<10} | {'':<10} | {line:<42} |")
+            print("-" * len(header))
 
         except Exception as e: print(f"{tc['id']:<5} | Error: {str(e)[:30]}")
 
