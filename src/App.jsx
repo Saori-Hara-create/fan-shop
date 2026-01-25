@@ -321,6 +321,7 @@ function App() {
 
   // Validate password frontend (8-16 ký tự, có chữ hoa, chữ thường, ký tự đặc biệt)
   const validatePassword = (password) => {
+    if (!password) return 'Mật khẩu không được để trống!';
     if (password.length < 8) return 'Mật khẩu phải có ít nhất 8 ký tự!';
     if (password.length > 16) return 'Mật khẩu không được quá 16 ký tự!';
     

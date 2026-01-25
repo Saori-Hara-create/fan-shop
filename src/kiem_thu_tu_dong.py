@@ -1,4 +1,5 @@
 import time
+import textwrap  # <--- Thư viện để xử lý xuống dòng
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
@@ -12,17 +13,11 @@ URL = "https://saori-hara-create.github.io/fan-shop/"
 # --- DỮ LIỆU KIỂM THỬ ---
 test_cases = [
     {"id": "TC01", "desc": "Hợp lệ", "u": "user900", "e": "new900@gmail.com", "p": "Abc@12345", "c": "Abc@12345", "exp": "Success"},
-    {"id": "TC02", "desc": "User 3 ký tự (abc)", "u": "abc", "e": "new901@gmail.com", "p": "Abc@12345", "c": "Abc@12345", "exp": "Lỗi"},
-    
-    # TC03: Sẽ FAIL vì DB bị reset, web cho đăng ký thành công
+    {"id": "TC02", "desc": "User 3 ký tự", "u": "abc", "e": "new901@gmail.com", "p": "Abc@12345", "c": "Abc@12345", "exp": "Lỗi"},
     {"id": "TC03", "desc": "User đã tồn tại", "u": "user123", "e": "new902@gmail.com", "p": "Abc@12345", "c": "Abc@12345", "exp": "Lỗi"},
-    
     {"id": "TC04", "desc": "User bỏ trống", "u": "", "e": "new903@gmail.com", "p": "Abc@12345", "c": "Abc@12345", "exp": "trống"},
     {"id": "TC05", "desc": "Email sai format", "u": "user904", "e": "new904", "p": "Abc@12345", "c": "Abc@12345", "exp": "hợp lệ"},
-    
-    # TC06: Sẽ FAIL tương tự TC03
     {"id": "TC06", "desc": "Email đã tồn tại", "u": "user905", "e": "exist@gmail.com", "p": "Abc@12345", "c": "Abc@12345", "exp": "Lỗi"},
-    
     {"id": "TC07", "desc": "Email bỏ trống", "u": "user906", "e": "", "p": "Abc@12345", "c": "Abc@12345", "exp": "trống"},
     {"id": "TC08", "desc": "Pass ngắn", "u": "user907", "e": "new907@gmail.com", "p": "Abc@12", "c": "Abc@12", "exp": "Mật khẩu"},
     {"id": "TC09", "desc": "Pass quá dài", "u": "user908", "e": "new908@gmail.com", "p": "Abc@123456789012345", "c": "Abc@123456789012345", "exp": "Mật khẩu"},
@@ -41,36 +36,40 @@ test_cases = [
 ]
 
 def run():
-    print(f">>> ĐANG CHẠY KIỂM THỬ (BẢN ĐƠN GIẢN - KHÔNG XỬ LÝ TRÙNG)...")
+    print(f">>> ĐANG CHẠY KIỂM THỬ (WORD WRAP - XUỐNG DÒNG)...")
     options = webdriver.ChromeOptions()
     options.add_argument("--disable-search-engine-choice-screen")
     driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
     driver.maximize_window()
     wait = WebDriverWait(driver, 10)
 
-    print(f"\n{'ID':<5} | {'User':<10} | {'Email':<20} | {'Pass':<10} | {'Trạng thái':<24} | {'Kết quả'}")
-    print("="*100)
+    # Header bảng
+    # Tăng độ rộng cột trạng thái lên 45
+    print(f"\n{'ID':<5} | {'User':<10} | {'Email':<20} | {'Pass':<10} | {'Trạng thái (Chi tiết lỗi)':<45} | {'Kết quả'}")
+    print("="*120)
+
+    # Khởi tạo công cụ ngắt dòng (chiều rộng tối đa 45 ký tự)
+    wrapper = textwrap.TextWrapper(width=45)
 
     for tc in test_cases:
         try:
-            # 1. Reset môi trường: Xóa sạch dữ liệu cũ để tránh lỗi vặt
+            # 1. Reset môi trường
             driver.get(URL)
             driver.execute_script("window.localStorage.clear(); window.sessionStorage.clear();")
             driver.delete_all_cookies()
             driver.refresh()
             time.sleep(1)
 
-            # 2. Mở form Đăng ký
+            # 2. Mở form
             try:
-                # Tìm nút icon hoặc nút chữ
                 try:
                     driver.find_element(By.XPATH, "//button[descendant::*[local-name()='svg']]").click()
                 except:
                     driver.find_element(By.XPATH, "//button[contains(text(), 'Đăng nhập')]").click()
                 
                 wait.until(EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Đăng ký ngay')]"))).click()
-            except Exception as e:
-                print(f"{tc['id']:<5} | Lỗi: Không mở được form đăng ký.")
+            except:
+                print(f"{tc['id']:<5} | Lỗi: Không mở được form.")
                 continue
 
             # 3. Nhập liệu
@@ -83,39 +82,68 @@ def run():
             driver.find_element(By.XPATH, "//button[text()='Đăng ký']").click()
             time.sleep(1.5) 
 
-            # 5. Kiểm tra kết quả
+            # 5. Xử lý kết quả & Lấy Text
             is_success_web = False
+            status_text = "Không xác định"
             
             if tc['u'] == "":
                  if len(driver.find_elements(By.XPATH, "//button[text()='Đăng ký']")) == 0:
-                     is_success_web = True 
+                     is_success_web = True
             else:
-                # Nếu thấy tên User hiện lên ở góc phải -> Thành công
                 if len(driver.find_elements(By.XPATH, f"//span[contains(text(), '{tc['u']}')]")) > 0:
                     is_success_web = True
             
-            status_text = "Đăng ký thành công" if is_success_web else "Đăng ký thất bại"
+            if is_success_web:
+                status_text = "Đăng ký thành công (OK)"
+            else:
+                # Lọc lỗi và bỏ dấu *
+                error_msg = ""
+                try:
+                    errors = driver.find_elements(By.XPATH, "//*[contains(@class, 'text-red')]")
+                    found_msgs = [e.text.strip() for e in errors if e.text.strip() != "" and e.text.strip() != "*"]
+                    
+                    if found_msgs:
+                        error_msg = ", ".join(found_msgs)
+                    else:
+                        error_msg = "Lỗi (Không tìm thấy text)"
+                except:
+                    error_msg = "Lỗi hệ thống"
+                
+                status_text = f"FAIL: {error_msg}"
 
             # 6. Đánh giá PASS/FAIL
             final_result = "FAIL"
-            
             if tc['exp'] == "Success":
                 if is_success_web: final_result = "PASS"
             else: 
-                # Nếu mong đợi Lỗi mà web lại cho thành công -> FAIL (Đúng ý TC03, TC06)
                 if not is_success_web: final_result = "PASS"
 
-            # In ra
+            # 7. IN RA MÀN HÌNH (CÓ XUỐNG DÒNG)
             icon = "✅" if final_result == "PASS" else "❌"
             u_pr = (tc['u'][:8] + '..') if len(tc['u']) > 8 else tc['u']
             p_pr = (tc['p'][:8] + '..') if len(tc['p']) > 8 else tc['p']
             
-            print(f"{tc['id']:<5} | {u_pr:<10} | {tc['e']:<20} | {p_pr:<10} | {status_text:<24} | {icon} {final_result}")
+            # Cắt status_text thành các dòng nhỏ
+            lines = wrapper.wrap(status_text)
+            
+            # Nếu không có nội dung thì gán mảng rỗng để tránh lỗi
+            if not lines: lines = [""]
+
+            # In dòng đầu tiên chứa đầy đủ thông tin
+            print(f"{tc['id']:<5} | {u_pr:<10} | {tc['e']:<20} | {p_pr:<10} | {lines[0]:<45} | {icon} {final_result}")
+
+            # In các dòng tiếp theo (nếu thông báo lỗi quá dài)
+            for line in lines[1:]:
+                # Các cột khác để trống, chỉ in cột Trạng thái
+                print(f"{'':<5} | {'':<10} | {'':<20} | {'':<10} | {line:<45} |")
+
+            # In đường gạch ngang mờ để phân cách các test case cho dễ nhìn
+            print("-" * 120)
 
         except Exception as e:
             print(f"{tc['id']:<5} | Error: {str(e)[:30]}")
 
-    print("="*100)
+    print("="*120)
     driver.quit()
 
 if __name__ == "__main__":
