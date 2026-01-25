@@ -397,6 +397,32 @@ function App() {
         return;
       }
     }
+    const response = isLogin
+      ? mockBackend.login(authForm.username, authForm.password)
+      : mockBackend.register(authForm.username, authForm.email, authForm.password);
+    if (response.success) {
+      // Đăng nhập/Đăng ký thành công -> Lưu user và đóng form
+      login(response.user);
+      setShowAuthModal(false);
+      // Reset form
+      setAuthForm({ username: '', email: '', password: '' });
+      setConfirmPassword('');
+    } else {
+      // === PHẦN BẠN ĐANG THIẾU HOẶC SAI ===
+      // Khi Backend trả về lỗi (trùng user/email), ta phải hiển thị nó lên
+      
+      const msg = response.message;
+      
+      if (msg.includes('Tên người dùng')) {
+        setUsernameError(msg); // Hiển thị dòng đỏ dưới ô Username
+      } else if (msg.includes('Email')) {
+        setEmailError(msg);    // Hiển thị dòng đỏ dưới ô Email
+      } else if (msg.includes('Mật khẩu')) {
+        setPasswordError(msg); // Hiển thị dòng đỏ dưới ô Password
+      } else {
+        alert(msg); // Các lỗi khác thì hiện popup
+      }
+    }
 
     if (authMode === 'register') {
       const result = mockBackend.register(authForm.username, authForm.email, authForm.password);
