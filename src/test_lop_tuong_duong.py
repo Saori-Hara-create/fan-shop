@@ -11,42 +11,25 @@ from webdriver_manager.chrome import ChromeDriverManager
 # --- CẤU HÌNH ---
 URL = "https://saori-hara-create.github.io/fan-shop/"
 
-# --- DỮ LIỆU KIỂM THỬ (ĐÃ SỬA TC06) ---
+# --- DỮ LIỆU KIỂM THỬ: PHÂN VÙNG TƯƠNG ĐƯƠNG (TC01 - TC12) ---
 test_cases = [
     {"id": "TC01", "desc": "Hợp lệ", "u": "user900", "e": "new900@gmail.com", "p": "Abc@12345", "c": "Abc@12345", "exp": "Success"},
     {"id": "TC02", "desc": "User 3 ký tự", "u": "abc", "e": "new901@gmail.com", "p": "Abc@12345", "c": "Abc@12345", "exp": "Lỗi"},
-    
-    # TC03: Trùng User (giữ nguyên)
     {"id": "TC03", "desc": "User đã tồn tại", "u": "user123", "e": "new902@gmail.com", "p": "Abc@12345", "c": "Abc@12345", "exp": "Lỗi"},
-    
     {"id": "TC04", "desc": "User bỏ trống", "u": "", "e": "new903@gmail.com", "p": "Abc@12345", "c": "Abc@12345", "exp": "trống"},
     {"id": "TC05", "desc": "Email sai format", "u": "user904", "e": "new904", "p": "Abc@12345", "c": "Abc@12345", "exp": "hợp lệ"},
-    
-    # --- ĐÃ SỬA TC06 Ở ĐÂY ---
-    # Đổi user từ 'user905' thành 'user905_new' để không bị trùng User,
-    # từ đó hệ thống sẽ check tiếp xuống Email và bắt được lỗi trùng Email.
+    # TC06: Đã sửa tên user để bắt lỗi trùng Email
     {"id": "TC06", "desc": "Email đã tồn tại", "u": "user905_new", "e": "exist@gmail.com", "p": "Abc@12345", "c": "Abc@12345", "exp": "Lỗi"},
-    # -------------------------
-    
     {"id": "TC07", "desc": "Email bỏ trống", "u": "user906", "e": "", "p": "Abc@12345", "c": "Abc@12345", "exp": "trống"},
     {"id": "TC08", "desc": "Pass ngắn", "u": "user907", "e": "new907@gmail.com", "p": "Abc@12", "c": "Abc@12", "exp": "Mật khẩu"},
     {"id": "TC09", "desc": "Pass quá dài", "u": "user908", "e": "new908@gmail.com", "p": "Abc@123456789012345", "c": "Abc@123456789012345", "exp": "Mật khẩu"},
     {"id": "TC10", "desc": "Pass bỏ trống", "u": "user909", "e": "new909@gmail.com", "p": "", "c": "", "exp": "trống"},
     {"id": "TC11", "desc": "Confirm sai", "u": "user910", "e": "new910@gmail.com", "p": "Abc@12345", "c": "Abc@1234", "exp": "khớp"},
-    {"id": "TC12", "desc": "Confirm bỏ trống", "u": "user911", "e": "new911@gmail.com", "p": "Abc@12345", "c": "", "exp": "trống"},
-    {"id": "TC13", "desc": "DT: Hợp lệ", "u": "user900", "e": "new900@gmail.com", "p": "Ab@12345", "c": "Ab@12345", "exp": "Success"},
-    {"id": "TC14", "desc": "DT: Confirm sai", "u": "user901", "e": "new901@gmail.com", "p": "Ab@12345", "c": "Ab@1234", "exp": "khớp"},
-    {"id": "TC15", "desc": "DT: Thiếu Confirm", "u": "user902", "e": "new902@gmail.com", "p": "Ab@12345", "c": "", "exp": "trống"},
-    {"id": "TC16", "desc": "DT: Pass sai", "u": "user903", "e": "new903@gmail.com", "p": "adadaad", "c": "adadaad", "exp": "Mật khẩu"},
-    {"id": "TC17", "desc": "DT: Thiếu Pass", "u": "user904", "e": "new904@gmail.com", "p": "", "c": "", "exp": "trống"},
-    {"id": "TC18", "desc": "DT: Email sai", "u": "user905", "e": "new905", "p": "Ab@12345", "c": "Ab@12345", "exp": "hợp lệ"},
-    {"id": "TC19", "desc": "DT: Thiếu Email", "u": "user906", "e": "", "p": "Ab@12345", "c": "Ab@12345", "exp": "trống"},
-    {"id": "TC20", "desc": "DT: User sai", "u": "ab", "e": "new908@gmail.com", "p": "Ab@12345", "c": "Ab@12345", "exp": "Lỗi"},
-    {"id": "TC21", "desc": "DT: Rỗng hết", "u": "", "e": "", "p": "", "c": "", "exp": "trống"}
+    {"id": "TC12", "desc": "Confirm bỏ trống", "u": "user911", "e": "new911@gmail.com", "p": "Abc@12345", "c": "", "exp": "trống"}
 ]
 
 def run():
-    print(f">>> ĐANG CHẠY KIỂM THỬ (FIX TC06 - EMAIL DUPLICATE)...")
+    print(f">>> ĐANG CHẠY TEST CASE LỚP TƯƠNG ĐƯƠNG...")
     options = webdriver.ChromeOptions()
     options.add_argument("--disable-search-engine-choice-screen")
     driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
@@ -59,121 +42,94 @@ def run():
 
     for tc in test_cases:
         try:
-            # 1. Reset môi trường
             driver.get(URL)
             driver.execute_script("window.localStorage.clear(); window.sessionStorage.clear();")
             
-            # 2. XỬ LÝ ĐẶC BIỆT CHO TC03 VÀ TC06 (Tiêm dữ liệu giả vào DB)
+            # --- LOGIC ĐẶC BIỆT CHO TC03 VÀ TC06 (Inject Data) ---
             if tc['id'] in ['TC03', 'TC06']:
                 fake_user = {
                     "id": 99999,
-                    "username": "user123" if tc['id'] == 'TC03' else "user_khac", # Username fake
-                    "email": tc['e'],    # Trùng email cho TC06
+                    "username": "user123" if tc['id'] == 'TC03' else "user_khac",
+                    "email": tc['e'],
                     "password": "hashed_password",
                     "createdAt": "2024-01-01"
                 }
-                # Nếu là TC03 thì cần trùng Username
                 if tc['id'] == 'TC03':
                     fake_user['username'] = tc['u']
                     fake_user['email'] = "email_khac@gmail.com"
 
-                # Tiêm dữ liệu vào localStorage
-                script = f"""
-                    const users = [{json.dumps(fake_user)}];
-                    localStorage.setItem('users', JSON.stringify(users));
-                """
+                script = f"const users = [{json.dumps(fake_user)}]; localStorage.setItem('users', JSON.stringify(users));"
                 driver.execute_script(script)
+            # -----------------------------------------------------
             
-            # Refresh để Web nhận dữ liệu mới
             driver.refresh()
             time.sleep(1)
 
-            # 3. Mở form Đăng ký
+            # Mở form & Nhập liệu
             try:
-                try:
-                    driver.find_element(By.XPATH, "//button[descendant::*[local-name()='svg']]").click()
-                except:
-                    driver.find_element(By.XPATH, "//button[contains(text(), 'Đăng nhập')]").click()
-                
+                try: driver.find_element(By.XPATH, "//button[descendant::*[local-name()='svg']]").click()
+                except: driver.find_element(By.XPATH, "//button[contains(text(), 'Đăng nhập')]").click()
                 wait.until(EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Đăng ký ngay')]"))).click()
             except:
                 print(f"{tc['id']:<5} | Lỗi: Không mở được form.")
                 continue
 
-            # 4. Nhập liệu
             driver.find_element(By.XPATH, "//input[@placeholder='Nhập tên người dùng']").send_keys(tc['u'])
             driver.find_element(By.XPATH, "//input[@placeholder='example@gmail.com']").send_keys(tc['e'])
             driver.find_element(By.XPATH, "//input[@placeholder='Nhập mật khẩu (VD: Pass@123)']").send_keys(tc['p'])
             driver.find_element(By.XPATH, "//input[@placeholder='Nhập lại mật khẩu']").send_keys(tc['c'])
-            
-            # 5. Submit
             driver.find_element(By.XPATH, "//button[text()='Đăng ký']").click()
-            time.sleep(1) 
+            time.sleep(1)
 
-            # 6. Kiểm tra kết quả
+            # Kiểm tra kết quả
             is_success_web = False
             status_text = "Không xác định"
             
-            # Logic check alert
+            # Check Alert
             alert_msg = ""
             try:
-                WebDriverWait(driver, 3).until(EC.alert_is_present())
+                WebDriverWait(driver, 2).until(EC.alert_is_present())
                 alert = driver.switch_to.alert
                 alert_msg = alert.text
                 alert.accept()
-            except:
-                pass
+            except: pass
 
-            # Logic check giao diện
+            # Check Giao diện
             if tc['u'] == "":
-                 if len(driver.find_elements(By.XPATH, "//button[text()='Đăng ký']")) == 0:
-                     is_success_web = True
+                 if len(driver.find_elements(By.XPATH, "//button[text()='Đăng ký']")) == 0: is_success_web = True
             else:
-                if len(driver.find_elements(By.XPATH, f"//span[contains(text(), '{tc['u']}')]")) > 0:
-                    is_success_web = True
+                if len(driver.find_elements(By.XPATH, f"//span[contains(text(), '{tc['u']}')]")) > 0: is_success_web = True
             
             if is_success_web:
                 status_text = "Đăng ký thành công (OK)"
             else:
-                if alert_msg:
-                    status_text = f"FAIL (Popup): {alert_msg}"
+                if alert_msg: status_text = f"FAIL (Popup): {alert_msg}"
                 else:
-                    error_msg = ""
                     try:
                         errors = driver.find_elements(By.XPATH, "//*[contains(@class, 'text-red')]")
                         found_msgs = [e.text.strip() for e in errors if e.text.strip() != "" and e.text.strip() != "*"]
-                        if found_msgs:
-                            error_msg = ", ".join(found_msgs)
-                        else:
-                            error_msg = "Lỗi (Không tìm thấy text)"
-                    except:
-                        error_msg = "Lỗi hệ thống"
-                    status_text = f"FAIL: {error_msg}"
+                        status_text = f"FAIL: {', '.join(found_msgs) if found_msgs else 'Lỗi (Không tìm thấy text)'}"
+                    except: status_text = "FAIL: Lỗi hệ thống"
 
-            # 7. Đánh giá PASS/FAIL
+            # Đánh giá
             final_result = "FAIL"
             if tc['exp'] == "Success":
                 if is_success_web: final_result = "PASS"
             else: 
                 if not is_success_web: final_result = "PASS"
 
-            # In ra màn hình
+            # Print
             icon = "✅" if final_result == "PASS" else "❌"
             u_pr = (tc['u'][:8] + '..') if len(tc['u']) > 8 else tc['u']
             p_pr = (tc['p'][:8] + '..') if len(tc['p']) > 8 else tc['p']
-            
             lines = wrapper.wrap(status_text)
             if not lines: lines = [""]
-
             print(f"{tc['id']:<5} | {u_pr:<10} | {tc['e']:<20} | {p_pr:<10} | {lines[0]:<45} | {icon} {final_result}")
-            for line in lines[1:]:
-                print(f"{'':<5} | {'':<10} | {'':<20} | {'':<10} | {line:<45} |")
+            for line in lines[1:]: print(f"{'':<5} | {'':<10} | {'':<20} | {'':<10} | {line:<45} |")
             print("-" * 120)
 
-        except Exception as e:
-            print(f"{tc['id']:<5} | Error: {str(e)[:30]}")
+        except Exception as e: print(f"{tc['id']:<5} | Error: {str(e)[:30]}")
 
-    print("="*120)
     driver.quit()
 
 if __name__ == "__main__":
