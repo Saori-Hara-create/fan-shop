@@ -32,7 +32,7 @@ def run():
     wait = WebDriverWait(driver, 10)
     wrapper = textwrap.TextWrapper(width=40)
 
-    # Header bảng (Đã thêm Confirm)
+    
     header = f"{'ID':<5} | {'User':<10} | {'Email':<18} | {'Pass':<10} | {'Confirm':<10} | {'Trạng thái (Chi tiết lỗi)':<42} | {'Kết quả'}"
     print("\n" + header)
     print("="*len(header))
@@ -44,7 +44,7 @@ def run():
             driver.refresh()
             time.sleep(1)
 
-            # Mở form & Nhập liệu
+           
             try:
                 try: driver.find_element(By.XPATH, "//button[descendant::*[local-name()='svg']]").click()
                 except: driver.find_element(By.XPATH, "//button[contains(text(), 'Đăng nhập')]").click()
@@ -60,11 +60,11 @@ def run():
             driver.find_element(By.XPATH, "//button[text()='Đăng ký']").click()
             time.sleep(1)
 
-            # Kiểm tra kết quả
+            
             is_success_web = False
             status_text = "Không xác định"
             
-            # Check Alert
+            
             alert_msg = ""
             try:
                 WebDriverWait(driver, 2).until(EC.alert_is_present())
@@ -73,7 +73,7 @@ def run():
                 alert.accept()
             except: pass
 
-            # Check Giao diện
+            
             if tc['u'] == "":
                  if len(driver.find_elements(By.XPATH, "//button[text()='Đăng ký']")) == 0: is_success_web = True
             else:
@@ -90,26 +90,26 @@ def run():
                         status_text = f"FAIL: {', '.join(found_msgs) if found_msgs else 'Lỗi'}"
                     except: status_text = "FAIL: Lỗi hệ thống"
 
-            # Đánh giá
+            
             final_result = "FAIL"
             if tc['exp'] == "Success":
                 if is_success_web: final_result = "PASS"
             else: 
                 if not is_success_web: final_result = "PASS"
 
-            # Print
+            
             icon = "✅" if final_result == "PASS" else "❌"
             u_pr = (tc['u'][:8] + '..') if len(tc['u']) > 8 else tc['u']
             p_pr = (tc['p'][:8] + '..') if len(tc['p']) > 8 else tc['p']
-            c_pr = (tc['c'][:8] + '..') if len(tc['c']) > 8 else tc['c'] # Cắt ngắn
+            c_pr = (tc['c'][:8] + '..') if len(tc['c']) > 8 else tc['c'] 
 
             lines = wrapper.wrap(status_text)
             if not lines: lines = [""]
             
-            # Dòng đầu
+            
             print(f"{tc['id']:<5} | {u_pr:<10} | {tc['e']:<18} | {p_pr:<10} | {c_pr:<10} | {lines[0]:<42} | {icon} {final_result}")
             
-            # Các dòng sau
+            
             for line in lines[1:]: 
                 print(f"{'':<5} | {'':<10} | {'':<18} | {'':<10} | {'':<10} | {line:<42} |")
             print("-" * len(header))
