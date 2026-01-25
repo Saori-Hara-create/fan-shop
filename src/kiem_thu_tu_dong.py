@@ -1,5 +1,6 @@
 import time
-import textwrap  # <--- Thư viện để xử lý xuống dòng
+import json
+import textwrap
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
@@ -8,16 +9,23 @@ from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 
 # --- CẤU HÌNH ---
+# Hãy thay đổi đường dẫn này nếu cần thiết
 URL = "https://saori-hara-create.github.io/fan-shop/"
 
 # --- DỮ LIỆU KIỂM THỬ ---
 test_cases = [
     {"id": "TC01", "desc": "Hợp lệ", "u": "user900", "e": "new900@gmail.com", "p": "Abc@12345", "c": "Abc@12345", "exp": "Success"},
     {"id": "TC02", "desc": "User 3 ký tự", "u": "abc", "e": "new901@gmail.com", "p": "Abc@12345", "c": "Abc@12345", "exp": "Lỗi"},
+    
+    # TC03: User trùng -> Tool sẽ tự tạo user này trong DB trước khi test
     {"id": "TC03", "desc": "User đã tồn tại", "u": "user123", "e": "new902@gmail.com", "p": "Abc@12345", "c": "Abc@12345", "exp": "Lỗi"},
+    
     {"id": "TC04", "desc": "User bỏ trống", "u": "", "e": "new903@gmail.com", "p": "Abc@12345", "c": "Abc@12345", "exp": "trống"},
     {"id": "TC05", "desc": "Email sai format", "u": "user904", "e": "new904", "p": "Abc@12345", "c": "Abc@12345", "exp": "hợp lệ"},
+    
+    # TC06: Email trùng -> Tool sẽ tự tạo email này trong DB trước khi test
     {"id": "TC06", "desc": "Email đã tồn tại", "u": "user905", "e": "exist@gmail.com", "p": "Abc@12345", "c": "Abc@12345", "exp": "Lỗi"},
+    
     {"id": "TC07", "desc": "Email bỏ trống", "u": "user906", "e": "", "p": "Abc@12345", "c": "Abc@12345", "exp": "trống"},
     {"id": "TC08", "desc": "Pass ngắn", "u": "user907", "e": "new907@gmail.com", "p": "Abc@12", "c": "Abc@12", "exp": "Mật khẩu"},
     {"id": "TC09", "desc": "Pass quá dài", "u": "user908", "e": "new908@gmail.com", "p": "Abc@123456789012345", "c": "Abc@123456789012345", "exp": "Mật khẩu"},
@@ -36,31 +44,45 @@ test_cases = [
 ]
 
 def run():
-    print(f">>> ĐANG CHẠY KIỂM THỬ (WORD WRAP - XUỐNG DÒNG)...")
+    print(f">>> ĐANG CHẠY KIỂM THỬ (FULL VERSION - ALERT & INJECTION)...")
     options = webdriver.ChromeOptions()
     options.add_argument("--disable-search-engine-choice-screen")
     driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
     driver.maximize_window()
     wait = WebDriverWait(driver, 10)
+    wrapper = textwrap.TextWrapper(width=45)
 
-    # Header bảng
-    # Tăng độ rộng cột trạng thái lên 45
     print(f"\n{'ID':<5} | {'User':<10} | {'Email':<20} | {'Pass':<10} | {'Trạng thái (Chi tiết lỗi)':<45} | {'Kết quả'}")
     print("="*120)
 
-    # Khởi tạo công cụ ngắt dòng (chiều rộng tối đa 45 ký tự)
-    wrapper = textwrap.TextWrapper(width=45)
-
     for tc in test_cases:
         try:
-            # 1. Reset môi trường
+            # 1. Reset môi trường: Xóa sạch LocalStorage để tránh dữ liệu rác
             driver.get(URL)
             driver.execute_script("window.localStorage.clear(); window.sessionStorage.clear();")
-            driver.delete_all_cookies()
+            
+            # 2. XỬ LÝ ĐẶC BIỆT CHO TC03 VÀ TC06 (Tiêm dữ liệu giả vào DB)
+            # Bước này đảm bảo lỗi "Đã tồn tại" chắc chắn xảy ra
+            if tc['id'] in ['TC03', 'TC06']:
+                fake_user = {
+                    "id": 99999,
+                    "username": tc['u'], # Trùng username cho TC03
+                    "email": tc['e'],    # Trùng email cho TC06
+                    "password": "hashed_password",
+                    "createdAt": "2024-01-01"
+                }
+                # Script Javascript để chèn thẳng vào trình duyệt
+                script = f"""
+                    const users = [{json.dumps(fake_user)}];
+                    localStorage.setItem('users', JSON.stringify(users));
+                """
+                driver.execute_script(script)
+            
+            # Refresh để Web nhận dữ liệu mới
             driver.refresh()
             time.sleep(1)
 
-            # 2. Mở form
+            # 3. Mở form Đăng ký
             try:
                 try:
                     driver.find_element(By.XPATH, "//button[descendant::*[local-name()='svg']]").click()
@@ -72,20 +94,32 @@ def run():
                 print(f"{tc['id']:<5} | Lỗi: Không mở được form.")
                 continue
 
-            # 3. Nhập liệu
+            # 4. Nhập liệu
             driver.find_element(By.XPATH, "//input[@placeholder='Nhập tên người dùng']").send_keys(tc['u'])
             driver.find_element(By.XPATH, "//input[@placeholder='example@gmail.com']").send_keys(tc['e'])
             driver.find_element(By.XPATH, "//input[@placeholder='Nhập mật khẩu (VD: Pass@123)']").send_keys(tc['p'])
             driver.find_element(By.XPATH, "//input[@placeholder='Nhập lại mật khẩu']").send_keys(tc['c'])
             
-            # 4. Submit
+            # 5. Submit
             driver.find_element(By.XPATH, "//button[text()='Đăng ký']").click()
-            time.sleep(1.5) 
+            time.sleep(1) # Chờ 1 chút để Alert hoặc Error Text kịp hiện ra
 
-            # 5. Xử lý kết quả & Lấy Text
+            # 6. Kiểm tra kết quả & Lấy thông báo lỗi
             is_success_web = False
             status_text = "Không xác định"
             
+            # --- LOGIC MỚI: BẮT ALERT (POPUP) ---
+            alert_msg = ""
+            try:
+                # Chờ Alert hiện lên (tối đa 3 giây)
+                WebDriverWait(driver, 3).until(EC.alert_is_present())
+                alert = driver.switch_to.alert
+                alert_msg = alert.text # Lấy nội dung
+                alert.accept() # Bấm OK
+            except:
+                pass # Không có alert thì bỏ qua
+
+            # Kiểm tra trạng thái đăng ký thành công trên giao diện
             if tc['u'] == "":
                  if len(driver.find_elements(By.XPATH, "//button[text()='Đăng ký']")) == 0:
                      is_success_web = True
@@ -96,48 +130,42 @@ def run():
             if is_success_web:
                 status_text = "Đăng ký thành công (OK)"
             else:
-                # Lọc lỗi và bỏ dấu *
-                error_msg = ""
-                try:
-                    errors = driver.find_elements(By.XPATH, "//*[contains(@class, 'text-red')]")
-                    found_msgs = [e.text.strip() for e in errors if e.text.strip() != "" and e.text.strip() != "*"]
-                    
-                    if found_msgs:
-                        error_msg = ", ".join(found_msgs)
-                    else:
-                        error_msg = "Lỗi (Không tìm thấy text)"
-                except:
-                    error_msg = "Lỗi hệ thống"
-                
-                status_text = f"FAIL: {error_msg}"
+                # Ưu tiên hiển thị lỗi từ Alert (cho trường hợp Backend trả về)
+                if alert_msg:
+                    status_text = f"FAIL (Popup): {alert_msg}"
+                else:
+                    # Nếu không có Alert, tìm lỗi chữ đỏ (validate frontend)
+                    error_msg = ""
+                    try:
+                        errors = driver.find_elements(By.XPATH, "//*[contains(@class, 'text-red')]")
+                        found_msgs = [e.text.strip() for e in errors if e.text.strip() != "" and e.text.strip() != "*"]
+                        if found_msgs:
+                            error_msg = ", ".join(found_msgs)
+                        else:
+                            error_msg = "Lỗi (Không tìm thấy text)"
+                    except:
+                        error_msg = "Lỗi hệ thống"
+                    status_text = f"FAIL: {error_msg}"
 
-            # 6. Đánh giá PASS/FAIL
+            # 7. Đánh giá PASS/FAIL
             final_result = "FAIL"
             if tc['exp'] == "Success":
                 if is_success_web: final_result = "PASS"
             else: 
+                # Mong đợi Lỗi -> Web không thành công -> PASS
                 if not is_success_web: final_result = "PASS"
 
-            # 7. IN RA MÀN HÌNH (CÓ XUỐNG DÒNG)
+            # 8. In ra màn hình (Đẹp)
             icon = "✅" if final_result == "PASS" else "❌"
             u_pr = (tc['u'][:8] + '..') if len(tc['u']) > 8 else tc['u']
             p_pr = (tc['p'][:8] + '..') if len(tc['p']) > 8 else tc['p']
             
-            # Cắt status_text thành các dòng nhỏ
             lines = wrapper.wrap(status_text)
-            
-            # Nếu không có nội dung thì gán mảng rỗng để tránh lỗi
             if not lines: lines = [""]
 
-            # In dòng đầu tiên chứa đầy đủ thông tin
             print(f"{tc['id']:<5} | {u_pr:<10} | {tc['e']:<20} | {p_pr:<10} | {lines[0]:<45} | {icon} {final_result}")
-
-            # In các dòng tiếp theo (nếu thông báo lỗi quá dài)
             for line in lines[1:]:
-                # Các cột khác để trống, chỉ in cột Trạng thái
                 print(f"{'':<5} | {'':<10} | {'':<20} | {'':<10} | {line:<45} |")
-
-            # In đường gạch ngang mờ để phân cách các test case cho dễ nhìn
             print("-" * 120)
 
         except Exception as e:

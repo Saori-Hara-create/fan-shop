@@ -120,28 +120,29 @@ const mockBackend = {
     if (!validation.valid) {
       return { success: false, message: validation.message };
     }
+    
+    // 1. Kiểm tra trùng Username (Logic mới thêm)
     if (this.users.find(u => u.username === username)) {
       return { success: false, message: 'Tên người dùng đã tồn tại!' };
     }
-    
+
+    // 2. Kiểm tra trùng Email
     if (this.users.find(u => u.email === email)) {
       return { success: false, message: 'Email đã được sử dụng!' };
     }
-    
-    const user = {
-      id: Date.now(),
+
+    const newUser = {
+      id: this.users.length + 1,
       username,
       email,
-      password: this.hashPassword(password),
+      password, // Trong thực tế cần hash password
       createdAt: new Date().toISOString()
     };
     
-    this.users.push(user);
-    this.saveUsers();
-    this.carts[user.id] = [];
-    this.saveCarts();
+    this.users.push(newUser);
+    localStorage.setItem('users', JSON.stringify(this.users));
     
-    return { success: true, user: { id: user.id, username, email } };
+    return { success: true, user: newUser };
   },
   
   login(email, password) {
