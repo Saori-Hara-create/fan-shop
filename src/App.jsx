@@ -120,6 +120,9 @@ const mockBackend = {
     if (!validation.valid) {
       return { success: false, message: validation.message };
     }
+    if (this.users.find(u => u.username === username)) {
+      return { success: false, message: 'Tên người dùng đã tồn tại!' };
+    }
     
     if (this.users.find(u => u.email === email)) {
       return { success: false, message: 'Email đã được sử dụng!' };
